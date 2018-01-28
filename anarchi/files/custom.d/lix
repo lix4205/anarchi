@@ -1,0 +1,50 @@
+
+# This script is executed at the end of the installation
+# Don't forget you are chrooted in the fresh install while it run
+# Put your stuff at the end of this file..
+# 
+#
+# Some variables you can use :
+# 	Username : NAME_USER=
+# 	Les services systemd SYSTD_SOFT=
+# 	Le disque sur lequel grub sera installé GRUB_DISK=
+# 	L'interface reseau choisie NFSROOT=
+# 	L'environnement de bureau DE=
+#	L'architecture de la distribution ARCH=
+# 	Le display manager DisplayManager=
+# 	Le codage clavier X11 $X11_KEYMAP=
+
+su $NAME_USER -c "ln -s $DIR_USR_CONF/$NAME_USER/CALIS /home/$NAME_USER/Calis
+ln -s $DIR_USR_CONF/$NAME_USER/DIVERS /home/$NAME_USER/Divers
+ln -s $DIR_USR_CONF/$NAME_USER/JEUX /home/$NAME_USER/Jeux
+ln -s $DIR_USR_CONF/$NAME_USER/Telechargements /home/$NAME_USER/Téléchargements
+ln -s $DIR_USR_CONF/$NAME_USER/Videos /home/$NAME_USER/Vidéos
+ln -s $DIR_USR_CONF/$NAME_USER/Documents /home/$NAME_USER/
+ln -s $DIR_USR_CONF/$NAME_USER/Music /home/$NAME_USER/
+ln -s $DIR_USR_CONF/$NAME_USER/Pictures /home/$NAME_USER/
+mkdir /home/$NAME_USER/.config"
+case $DE in
+	plasma)
+		su $NAME_USER -c "mkdir -p /home/$NAME_USER/.local/share
+		cp -R $DIR_USR_CONF/$NAME_USER/.config/{autostart-scripts,baloofilerc,dconf,gtkrc,gtkrc-2.0,kconf_updaterc,kdebugrc,kded_device_automounterrc,kdeglobals,kglobalshortcutsrc,khotkeysrc,konsolerc,kscreenlockerrc,ktimezonedrc,kwinrc,plasma-localerc,plasma-org.kde.plasma.desktop-appletsrc,plasmashellrc,powerdevilrc,powermanagementprofilesrc,session,startupconfig,startupconfigfiles,startupconfigkeys,dolphinrc,katerc,kateschemarc,katesyntaxhighlightingrc,ksplashrc} /home/$NAME_USER/.config/
+		cp -R $DIR_USR_CONF/$NAME_USER/.local/share/{konsole,kxmlgui5,user-places.xbel} /home/$NAME_USER/.local/share/
+		"
+		$pacman -S --noconfirm kdeconnect
+# 			Autologin			
+		sed -i "s/User=.*/User=lix/" /etc/sddm.conf
+		sed -i "s/Session=.*/Session=plasma.desktop/" /etc/sddm.conf
+	;;
+	xfce)
+		su $NAME_USER -c "cp -R $DIR_USR_CONF/$NAME_USER/.config/xfce4/ /home/$NAME_USER/.config/"
+	;;
+	mate)
+		su $NAME_USER -c "cp -R $DIR_USR_CONF/$NAME_USER/.config/{dconf,caja} /home/$NAME_USER/.config/"
+# 			su $NAME_USER -c "yaourt --arch $ARCH_PACKAGES -Sy mate-menu"
+	;;
+	lxqt)
+		su $NAME_USER -c "cp -R $DIR_USR_CONF/$NAME_USER/.config/{gconf,lxqt,qterminal.org,pcmanfm-qt} /home/$NAME_USER/.config/"
+		sed -i "s/User=.*/User=lix/" /etc/sddm.conf
+		sed -i "s/Session=.*/Session=lxqt.desktop/" /etc/sddm.conf
+	;;
+esac
+

@@ -1,0 +1,66 @@
+
+# This script is executed at the end of the installation
+# Don't forget you are chrooted in the fresh install while it run
+# 
+# Some variables you can use :
+# 	Username : NAME_USER=
+# 	Les services systemd SYSTD_SOFT=
+# 	Le disque sur lequel grub sera installé GRUB_DISK=
+# 	L'interface reseau choisie NFSROOT=
+# 	L'environnement de bureau DE=
+#
+#
+
+# BEGIN SYSTEM CONFIG
+if [[ "$1" == "" ]]; then
+	# BEGIN PXE entry and BACKGROUND in GRUB 
+	if [[ -e /etc/grub.d/40_custom ]]; then
+		cp /tmp/files/extras/ipxe* /boot/
+		# TODO !!!! Détecter la bonne partition...
+		PXE_ENTRY="\n\nmenuentry \"ipxe\" {\n\tset root='(hd0,1)'\n\tlinux16  /ipxe.lkrn\n}"
+		if ! mountpoint -q /boot; then
+			PXE_ENTRY="\n\nmenuentry \"ipxe\" {\n\tset root='(hd0,1)'\n\tlinux16  /boot/ipxe.lkrn\n}"
+		fi
+		echo -e "$PXE_ENTRY" >> /etc/grub.d/40_custom
+
+		# random BACKGROUND IMAGE
+		IMG_AP_HOME=$(find "/tmp/files/imgs/" -maxdepth 1 -type f | shuf | head -n 1 )
+		EXT_BG_NAME=$( echo "$IMG_AP_HOME" | sed "s/.*\.//")
+		BG_NAME="bg.$EXT_BG_NAME"
+		cp "$IMG_AP_HOME" /boot/$BG_NAME
+		sed -i "s/#GRUB_BACKGROUND=.*/GRUB_BACKGROUND=\"\/boot\/$BG_NAME\"/" /etc/default/grub
+	fi
+	# END
+
+	# BEGIN ~/.bashrc configuration
+	# Color Bash Prompt
+	sed -i "s/PS1=.*$/PS1='\\\[\\\033\[01;32m\\\]\\\u@\\\h\\\[\\\033\[00m\\\]:\\\[\\\033\[01;37m\\\]\\\w\\\[\\\033\[00m\\\]\\\$ '/" "/etc/skel/.bashrc"
+
+	# Alias tout le monde
+	echo  "alias grep=\"grep --color\"" >> "/etc/skel/.bashrc"
+	
+	# Copie de .bashrc dans root pour le terminal root en couleur
+	cp /etc/skel/.bash* "/root/"
+	# Modification de la couleur pour l'user
+	sed -i "s/PS1=.*$/PS1='[\\\[\\\033\[01;31m\\\]\\\u@\\\h\\\[\\\033\[00m\\\]:\\\[\\\033\[01;34m\\\]\\\w\\\[\\\033\[00m\\\]]\\\\\$ '/" "/root/.bashrc"
+	
+	# Alias utilisateur
+	echo  -e "\n\nalias su=\"su -\"" >> "/etc/skel/.bashrc"
+	# nano editor for yaourt
+	echo -e "export VISUAL=\"nano\""  >> "/etc/skel/.bashrc"
+	# END
+
+	# BEGIN configuration personnelle
+
+	# PGUP et PGDOWN becomes history search terminal
+	sed -i "s/beginning-of-history/history-search-backward/g" /etc/inputrc
+	sed -i "s/end-of-history/history-search-forward/g" /etc/inputrc
+
+	exit
+fi
+# END
+
+# BEGIN USER CONFIG
+source /tmp/files/custom_user
+# END 
+

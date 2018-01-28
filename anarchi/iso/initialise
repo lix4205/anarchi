@@ -1,0 +1,668 @@
+# !/bin/sh
+#
+# Anarchi Network Configuration script (version 0.9-1 - 21-Dec-2015)
+#
+# Written by Elie Coutaud
+#
+# This program is free software, provided under the GNU General Public License
+# as published by the Free Software Foundation. So feel free to copy, distribute,
+# or modify it as you wish.
+#
+
+# Variables
+VERSION="AnarchIc 0.9-5"
+OPT="/tmp/.opt"
+echo "" >${OPT}
+WIFI_DEV=$(ip link | awk '{print $2}' | grep -i "wl" | sed 's/://')
+_PlsWait="\nPlease wait... Even geduld aub... Bitte warten... Attendere prego... Vennligst Vent... Por favor espera...\n"
+NET=$( [ -e /tmp/net.ok ] && cat /tmp/net.ok )
+source /root/files/futil
+# clear
+
+# Check there is an active ethernet connection. Wait a bit for dhcpcd.
+please_wait() {
+	msg " Waiting for Network Connection " 
+	sleep 8
+# 	NET=""
+# 	1
+}
+
+# Adapted from AIS. Checks if system is made by Apple, whether the system is BIOS or UEFI,
+# and for LVM and/or LUKS.
+id_system() {
+	
+    # Apple System Detection
+    if [[ "$(cat /sys/class/dmi/id/sys_vendor)" == 'Apple Inc.' ]] || [[ "$(cat /sys/class/dmi/id/sys_vendor)" == 'Apple Computer, Inc.' ]]; then
+      modprobe -r -q efivars || true  # if MAC
+    else
+      modprobe -q efivarfs            # all others
+    fi
+    
+    # BIOS or UEFI Detection
+    if [[ -d "/sys/firmware/efi/" ]]; then
+      # Mount efivarfs if it is not already mounted
+      if [[ -z $(mount | grep /sys/firmware/efi/efivars) ]]; then
+        mount -t efivarfs efivarfs /sys/firmware/efi/efivars
+      fi
+      SYSTEM="UEFI"
+    else
+      SYSTEM="BIOS"
+    fi
+         
+    # Encryption (LUKS) Detection
+    [[ $(lsblk -o TYPE | grep "crypt") == "" ]] && LUKS=0 || LUKS=1
+
+}   
+ 
+
+
+
+# Run if the ethernet connection is not already enabled
+ether_connect() {
+
+	if [[ $(systemctl status dhcpcd | grep "running") == "" ]]; then
+		systemctl enable dhcpcd
+		systemctl start dhcpcd
+	fi
+
+	dialog --backtitle "$VERSION" --title " Connecting to Ethernet " --infobox "$_PlsWait" 0 0
+	sleep 5
+}
+
+# If no ethernet and there is a wireless device recognised
+wifi_connect() {
+
+	# Stop dhcpcd if it is running
+	if [[ $(systemctl status dhcpcd | grep "running") != "" ]]; then
+	systemctl disable dhcpcd
+	systemctl stop dhcpcd
+	fi
+
+	# Set the link down else wifi-menu won't work
+	ip link set $WIFI_DEV down >/dev/null 2>&1	
+				
+	# Start wifi-menu
+	clear
+	wifi-menu
+	dialog --backtitle "$VERSION" --title " Connecting Wifi " --infobox "$_PlsWait" 0 0 && sleep 2
+
+}
+chroot_add_mount() {
+	mount "$@" && CHROOT_ACTIVE_MOUNTS=("$2" "${CHROOT_ACTIVE_MOUNTS[@]}")
+}
+
+mount_setup() {
+	CHROOT_ACTIVE_MOUNTS=()
+  
+	if [ ! $testtrap ]; then
+		[[ $(trap -p EXIT) ]] && die "$_bug_chroot"
+		trap 'chroot_teardown' EXIT
+		testtrap=1
+	fi
+	
+	chroot_add_mount "${to_mount["/mnt"]}" "/mnt" 
+	for elem in ${!to_mount[*]} ; do
+#         echo "Key \"${elem}\" : Value : "${to_mount[${elem}]} ; # retourne les clés du hachage et la valeur de leur élément
+		[ ! -e "${elem}" ] && mkdir ${elem}
+		[ "${elem}" != "/mnt" ] && chroot_add_mount "${to_mount[${elem}]}" "${elem}" 
+	done
+	
+	if [ "$CACHE_PAQUET" != "" ]; then
+		chroot_add_mount "$CACHE_PAQUET" "/var/cache/pacman/pkg"
+	else
+		[ ! -e "/mnt/var/cache/pacman/pkg" ] && mkdir -p "/mnt/var/cache/pacman/pkg"
+		chroot_add_mount "/mnt/var/cache/pacman/pkg" "/var/cache/pacman/pkg"  -t none -o bind
+	
+	fi
+}
+
+chroot_teardown() {
+# echo "chroot active mount : ${CHROOT_ACTIVE_MOUNTS[@]}"
+	umount "${CHROOT_ACTIVE_MOUNTS[@]}"
+	unset CHROOT_ACTIVE_MOUNTS
+	[ "$1" == "reset" ] && CHROOT_ACTIVE_MOUNTS=() 
+	sleep 3
+}
+
+ set_console_kmap() {
+	
+	KEYMAPS=""
+	j=0
+	vconsole="$1"
+	if [ ! -e /tmp/vconsole ]; then
+# 	echo "$2/usr/share/kbd/keymaps"
+		echo -n "==> Loading Console Keymap list..."
+# 		if [ -e "$2/usr/share/kbd/keymaps" ]; then 
+		for i in $(ls -R "$2/usr/share/kbd/keymaps" | grep "map.gz" | sed 's/\.map.gz//g' | sort); do
+			j=$((j+1))
+			valid_kmap["$j"]="$i"
+			valid_kmap["_$j"]="1"
+			valid_kmap["$i"]="1"
+			KEYMAPS="${KEYMAPS} $j) ${i} $( [ "$(expr $((j+1))  % 3 )"  == "0" ] && echo "\n"  ) "
+		done
+		echo "ok"
+		if [[ "$vconsole" == "" || -z "${valid_kmap["$vconsole"]}" ]]; then
+			echo -e $KEYMAPS | column -t
+			
+			while [[ "$vconsole" == "" && "${valid_kmap["_$NUM_KEYMAP"]}" != "1" ]]; do
+				NUM_KEYMAP=$( rid "Please select Virtual Console Keymap. ( Shift + PageUp to view the top of the list)" )
+# 				[ -z ${valid_kmap["$NUM_KEYMAP"]} ] && echo "in" || echo "no"
+				[ "$NUM_KEYMAP" != "" ] && vconsole="${valid_kmap[$NUM_KEYMAP]}"
+			done
+		fi
+# 		else
+# 			die "Unable to find any console keymaps ! ( Try with \"-k\" option )"
+# 		fi
+		echo "$vconsole" > /tmp/vconsole
+	else
+		vconsole=$( cat /tmp/vconsole )
+	fi
+	msg "Load \"$vconsole\" keymap..."
+	loadkeys $vconsole
+}
+
+ set_xkbmap() {
+	XKBMAP_LIST=""
+	keymaps_xkb=("af_Afghani al_Albanian am_Armenian ara_Arabic at_German-Austria az_Azerbaijani ba_Bosnian bd_Bangla be_Belgian bg_Bulgarian br_Portuguese-Brazil bt_Dzongkha bw_Tswana by_Belarusian ca_French-Canada cd_French-DR-Congo ch_German-Switzerland cm_English-Cameroon cn_Chinese cz_Czech de_German dk_Danishee_Estonian epo_Esperanto es_Spanish et_Amharic fo_Faroese fi_Finnish fr_French gb_English-UK ge_Georgian gh_English-Ghana gn_French-Guinea gr_Greek hr_Croatian hu_Hungarian ie_Irish il_Hebrew iq_Iraqi ir_Persian is_Icelandic it_Italian jp_Japanese ke_Swahili-Kenya kg_Kyrgyz kh_Khmer-Cambodia kr_Korean kz_Kazakh la_Lao latam_Spanish-Lat-American lk_Sinhala-phonetic lt_Lithuanian lv_Latvian ma_Arabic-Morocco mao_Maori md_Moldavian me_Montenegrin mk_Macedonian ml_Bambara mm_Burmese mn_Mongolian mt_Maltese mv_Dhivehi ng_English-Nigeria nl_Dutch no_Norwegian np_Nepali ph_Filipino pk_Urdu-Pakistan pl_Polish pt_Portuguese ro_Romanian rs_Serbian ru_Russian se_Swedish si_Slovenian sk_Slovak sn_Wolof sy_Arabic-Syria th_Thai tj_Tajik tm_Turkmen tr_Turkish tw_Taiwanese tz_Swahili-Tanzania ua_Ukrainian us_English-US uz_Uzbek vn_Vietnamese za_English-S-Africa")
+
+	j=0
+	echo -n "==> Loading X11 Keymap list..."
+	for i in ${keymaps_xkb}; do
+		XKBMAP_LIST="$( echo "${XKBMAP_LIST} $((j+1))) ${i}" ) $( [ "$(expr $((j+1))  % 3 )"  == "0" ] && echo "\n"  ) "
+		j=$((j+1))
+		langue[$j]="${i}"
+		langue[_$j]="1"
+		langue[_$(echo ${i} |sed 's/_.*//')]="$(echo ${i} |sed 's/_.*//')"
+		localisation_tab[$(echo ${i} |sed 's/_.*//')]="1"
+	done
+	echo "ok"
+	if [[ "$1" == "" || -z "${localisation_tab[$1]}" ]]; then
+		XKBMAP_LIST=${XKBMAP_LIST} 
+		echo -e ${XKBMAP_LIST} | column -t
+		XKBMAP=$( rid "Please choose X11 keymap. ( Shift + PageUp to view the top of the list)" )
+		while [ "${langue[_$XKBMAP]}" != "1" ]; do
+			XKBMAP=$( rid "Please choose X11 keymap. ( Shift + PageUp to view the top of the list)" )
+		done
+		LOCALISATION=$(echo ${langue[${XKBMAP}]} | sed 's/_.*//')
+	fi
+}
+
+
+# Originally adapted from AIS.
+create_partitions(){
+
+# This only creates the minimum number of partition(s) necessary. Users wishing for other schemes will
+# have to learn to use a partitioning application.
+auto_partition(){
+
+# Hooray for tac! Deleting partitions in reverse order deals with logical partitions easily.
+delete_partitions(){
+	
+	parted -s ${DEVICE} print | awk '/^ / {print $1}' > /tmp/.del_parts
+	
+	for del_part in $(tac /tmp/.del_parts); do
+		parted -s ${DEVICE} rm ${del_part} 2>/tmp/.errlog
+	done
+
+
+}
+
+ 
+ # Identify the partition table
+ part_table=$(parted -s ${DEVICE} print | grep -i 'partition table' | awk '{print $3}')
+
+ # Autopartition for BIOS systems 
+ if [[ $SYSTEM == "BIOS" ]]; then
+    dialog --backtitle "$VERSION - $SYSTEM ($ARCHI)" --title " Auto-Partition (BIOS/MBR) " --yesno "$_AutoPartBody1 $DEVICE $_AutoPartBIOSBody2" 0 0
+	
+	if [[ $? -eq 0 ]]; then
+	    delete_partitions
+	    if [[ $part_table != "msdos" ]]; then
+		   parted -s ${DEVICE} mklabel msdos 2>/tmp/.errlog
+		fi
+		parted -s ${DEVICE} mkpart primary ext3 1MiB 100% 2>/tmp/.errlog	
+		parted -s ${DEVICE} set 1 boot on 2>>/tmp/.errlog
+        echo -e "Partition Scheme:\n" > /tmp/.devlist
+        lsblk ${DEVICE} -o NAME,TYPE,FSTYPE,SIZE > /tmp/.devlist
+        dialog --backtitle "$VERSION - $SYSTEM ($ARCHI)" --title "" --textbox /tmp/.devlist 0 0
+    else
+        create_partitions
+    fi
+ 
+ # Autopartition for UEFI systems   
+ else
+    dialog --backtitle "$VERSION - $SYSTEM ($ARCHI)" --title " Auto-Partition (UEFI/GPT) " --yesno "$_AutoPartBody1 $DEVICE $_AutoPartUEFIBody2" 0 0
+	
+	if [[ $? -eq 0 ]]; then
+	    delete_partitions
+	    if [[ $part_table != "gpt" ]]; then
+		   parted -s ${DEVICE} mklabel gpt 2>/tmp/.errlog
+		fi
+		parted -s ${DEVICE} mkpart ESP fat32 1MiB 513MiB 2>/tmp/.errlog
+		parted -s ${DEVICE} set 1 boot on 2>>/tmp/.errlog
+		parted -s ${DEVICE} mkpart primary ext3 513MiB 100% 2>>/tmp/.errlog
+		echo -e "Partition Scheme:\n" > /tmp/.devlist
+        lsblk ${DEVICE} -o NAME,TYPE,FSTYPE,SIZE >> /tmp/.devlist
+        dialog --backtitle "$VERSION - $SYSTEM ($ARCHI)" --title "" --textbox /tmp/.devlist 0 0
+    else
+		create_partitions
+    fi
+    
+ fi
+
+}
+
+format_partition() {
+	ROOT_PARTITION=
+	DISK_FORMAT=
+	select_partition "${DEVICE}"
+	if [ "$ROOT_PARTITION" != "" ]; then
+		while [ "$DISK_FORMAT" == "" ] ; do
+
+			DISK_FORMAT="$( rid "Formater en ?\n    1) Ext4\n    2) Ext3\n    3) Ext2\n    4) FAT32\n    5) jfs\n    6) ReiserFS\n    7) XFS\n    8) ( Btrfs )\n" )"
+		
+			DEVICE="$1"
+			case "$DISK_FORMAT" in
+				"1") FILESYSTEM="mkfs.ext4 -F" ;;
+				"2") FILESYSTEM="mkfs.ext3 -F" ;;
+				"3") FILESYSTEM="mkfs.ext2 -F" ;;
+				"4") FILESYSTEM="mkfs.vfat -F32" ;;       
+				"5") FILESYSTEM="mkfs.jfs -q" ;;
+				"6") FILESYSTEM="mkfs.reiserfs -f -f" ;;
+				"7") FILESYSTEM="mkfs.xfs -f" ;;
+				"8") 
+		# 				FILESYSTEM="mkfs.btrfs -f" 
+		# 				modprobe btrfs
+					msg "BTRFS n'est pas encore pris en charge..."
+					format_partition $@
+				;;
+				q) break ;;
+				*) DISK_FORMAT= ;;
+			esac 
+		done
+
+		PART_TO_FORMAT="/dev/$ROOT_PARTITION"		
+		ASK_FORMAT="$( rid "Partition %s will be formated with \"$FILESYSTEM\", Continue [o/N] " "$PART_TO_FORMAT" )"
+		while [[ "$ASK_FORMAT" != "n" && "$ASK_FORMAT" != "o" && "$ASK_FORMAT" != "" ]]; do
+			ASK_FORMAT="$( rid "Partition %s will be formated with \"$FILESYSTEM\", Continue [o/N] " "$PART_TO_FORMAT" )"
+		done
+		
+# 		Formatage
+		case "$ASK_FORMAT" in
+			"o"|"")
+				if ! $FILESYSTEM $PART_TO_FORMAT; then
+					msg "Une erreur est survenue lors du formatage de $PART_TO_FORMAT !"
+				else
+					msg "$PART_TO_FORMAT has been formated."
+				fi
+			;;
+		esac
+	fi
+}
+	if [ "$NB_DISK" != "q" ]; then
+		while [ "$DISK_UTILITIE" == "" ] ; do
+			DISK_UTILITIE="$( rid "Witch utilitie do you want to use ?\n    1) `# Auto Partition (BIOS & UEFI)`\n    2) Parted (BIOS & UEFI)\n    3) CFDisk (BIOS/MBR)\n    4) CGDisk (UEFI/GPT)\n    5) FDisk  (BIOS & UEFI)\n    6) GDisk  (UEFI/GPT)" )"
+			DISK_TO_MANAGE="/dev/${DEVICE}"
+			case "$DISK_UTILITIE" in
+				"1") #auto_partition
+					;;
+				"2") clear
+					parted $DISK_TO_MANAGE
+					;;
+				"3") cfdisk $DISK_TO_MANAGE
+					;;
+				"4") cgdisk $DISK_TO_MANAGE
+					;;       
+				"5") clear
+					fdisk $DISK_TO_MANAGE
+					;;
+				"6") clear
+					gdisk $DISK_TO_MANAGE
+					;;
+				"q") break
+					
+					;;
+				*) DISK_UTILITIE=
+					;;
+			esac 
+			if [ "$DISK_UTILITIE" != "" ]; then
+				if [ "$DISK_UTILITIE" != "q" ]; then
+					format_partition "${DEVICE}"
+				fi
+				ASK_FORMAT=
+				ASK_FORMAT="$( rid "Continue to format [o/N]" )"
+				while [[ "$ASK_FORMAT" != "n" && "$ASK_FORMAT" == "o" && "$ASK_FORMAT" != "" ]]; do
+					if [[ "$ASK_FORMAT" == "o" ]]; then
+# 						echo "WTF"
+# 						DISK_
+						format_partition "${DEVICE}"
+					fi
+					ASK_FORMAT="$( rid "Continue to format [o/N]" )"
+				done
+			fi
+		done
+	fi
+	DISK_UTILITIE=
+	ROOT_PARTITION=
+	msg "Root selection"
+}
+
+select_partition() {
+	DEVICE_TOSHOW="$1"
+	msg="for root (/) : ( \"u\" to use disks utilies )"
+	LSBLK_COMMAND=$( lsblk -l | grep 'part\|lvm' | sed 's/[\t ].*//' | sort -u )
+	if [ "$DEVICE_TOSHOW" != "" ]; then
+		LSBLK_COMMAND=$( lsblk -l | grep 'part\|lvm' | sed 's/[\t ].*//' | grep $DEVICE_TOSHOW | sort -u )
+		msg="to format..."
+	fi
+	
+	
+	PARTITIONS=
+	j=0
+	for i in $LSBLK_COMMAND; do
+		j=$((j+1))
+		partoches[$j]="${i}"
+		partoches[_$j]=1
+		PARTITIONS="${PARTITIONS}    $j) ${i}\n"
+	done
+
+	msg2 "Availables partitions"
+	echo -e "$PARTITIONS"
+	NB_ROOT_PARTITION=$( rid "Please select partition $msg" )
+	while [[ "$NB_ROOT_PARTITION" == "" || "$NB_ROOT_PARTITION" == "u" && "$NB_ROOT_PARTITION" != "q" && ${partoches[_$NB_ROOT_PARTITION]} != 1 ]]; do
+		if [ "$NB_ROOT_PARTITION" == "q" ]; then
+			NB_ROOT_PARTITION=			
+			break
+		fi
+		if [ "$NB_ROOT_PARTITION" == "u" ]; then
+			disk_utilities
+			NB_ROOT_PARTITION=
+			break
+# 				clear
+		fi
+# 			else
+		msg2 "Availables partitions"
+		echo -e "$PARTITIONS"
+		NB_ROOT_PARTITION=$( rid "Please select partition $msg" )
+	done
+	if [[ ${partoches[_$NB_ROOT_PARTITION]} == 1 ]]; then
+		ROOT_PARTITION=${partoches[$NB_ROOT_PARTITION]}
+		partoches[$NB_ROOT_PARTITION]=""
+		partoches[_$NB_ROOT_PARTITION]=0
+	fi
+}
+
+disk_utilities() {
+	j=0
+	DISKS=
+	for i in $( lsblk -l | grep 'disk' | sed 's/[\t ].*//' | sort -u ); do
+		j=$((j+1))
+		disks[$j]="${i}"
+		disks[_$j]=1
+		
+		DISKS="${DISKS}    $j) ${i} ($(lsblk -l | grep $i | grep 'disk' | awk '{print $4}' ))\n"
+	done
+	msg "Prepare disks"
+	msg2 "Availables disks"
+	echo -e "$DISKS"
+	
+	NB_DISK=$( rid "Please select disk to manage : (\"q\" to quit)" )
+	if [ "$NB_DISK" != "q" ]; then
+		while [[ "$NB_DISK" != "q" && ${disks[_$NB_DISK]} != 1 ]]; do
+			msg2 "Availables disks"
+			echo -e "$DISKS"
+			NB_DISK=$( rid "Please select disk to manage : (\"q\" to quit)" )
+		done
+	fi
+	DEVICE="${disks[$NB_DISK]}"
+	create_partitions
+# 	clear
+}
+mount_partition() {
+
+# BEGIN root partition selection
+	msg "Root selection"
+	select_partition
+	
+	while [ "$ROOT_PARTITION" == "" ]; do
+		select_partition		
+	done
+	to_mount["/mnt"]="/dev/$ROOT_PARTITION"
+	msg "%s will be mount at /mnt as root (/)\n" "${to_mount["/mnt"]}" 
+# END root partition selection
+
+# 
+	
+	j=0
+	DIRS=
+	for i in ${dirs[@]}; do
+		j=$((j+1))
+		if [ "${dirs_ok[_$j]}" != "0" ]; then 
+			dirs_ok[$j]="${i}"
+			dirs_ok["_$j"]="1"
+			DIRS="${DIRS}    $j) ${i}\n"
+		fi
+# 			echo "$j ;:$i : ${dirs_ok[_$j]}"
+	done
+	j=0
+	NB_PARTOCH=0
+	PARTITIONS=
+	for i in $( lsblk -l | grep 'part\|lvm' | sed 's/[\t ].*//' | sort -u ); do
+		j=$((j+1))
+		if [ "${partoches[_$j]}" != "0" ]; then 
+			partoches[$j]="${i}"
+			partoches[_$j]=1
+			PARTITIONS="${PARTITIONS}\n    $j) ${i}"
+			NB_PARTOCH=$j
+		else
+			partoches[$j]=""
+			
+		fi
+	done
+
+	msg2 "Availables directory"
+	echo -e "$DIRS" 
+	NB_DIR=$( rid "Please select directory : (\"q\" to quit)" )
+
+	while [[ (  "$NB_DIR" == "" || "$NB_DIR" != "q" ) && $NB_PARTOCH -gt 0 ]]; do
+		if [ "$NB_DIR" == "q" ]; then
+			$NB_DIR=			
+			break
+		fi
+		
+		if [ "${dirs_ok[$NB_DIR]}" != "" ]; then
+			
+			j=0
+	# 		NB_PARTOCH=0
+			PARTITIONS=
+			for i in $( lsblk -l | grep 'part\|lvm' | sed 's/[\t ].*//' | sort -u ); do
+				j=$((j+1))
+				if [ "${partoches[_$j]}" != "0" ]; then 
+					partoches[$j]="${i}"
+	# 				partoches[_$j]=1
+					PARTITIONS="${PARTITIONS}    $j) ${i}\n"
+	# 				NB_PARTOCH=$j
+				else
+					partoches[$j]=""
+				fi
+			done
+			
+			if [ "$NB_DIR" != "" ]; then
+				
+				msg2 "Availables partitions"
+				echo -e "$PARTITIONS"
+				NB_OTHER_PARTITION=$( rid "Please select partition :" )
+				while [[ ${partoches[_$NB_OTHER_PARTITION]} != 1 ]]; do
+					[ "$NB_OTHER_PARTITION" == "q" ] && break
+					echo -e "$PARTITIONS"
+					NB_OTHER_PARTITION=$( rid "Please select partition :" )
+			# 		echo $ROOT_PARTITION ${partoches[_$NB_OTHER_PARTITION]}
+				done
+				[ "$NB_OTHER_PARTITION" == "q" ] && break
+				PARTTMP=${partoches[$NB_OTHER_PARTITION]}
+				
+				DIR=${dirs_ok[$NB_DIR]}
+				to_mount["/mnt/$DIR"]="/dev/$PARTTMP"
+				msg "%s will be mount at /mnt/$DIR" "${to_mount["/mnt/$DIR"]}" 
+		# 		mount_setup "/dev/$PARTTMP" "/mnt/$DIR"
+				
+				
+				dirs_ok[_${NB_DIR}]=0
+				partoches[_${NB_DIR}]=0
+				partoches[${NB_DIR}]=0
+				NB_PARTOCH=$(($NB_PARTOCH-1))
+			fi
+			j=0
+			DIRS=
+			for i in ${dirs[@]}; do
+				j=$((j+1))
+				if [ "${dirs_ok[_$j]}" != "0" ]; then 
+					dirs_ok[$j]="${i}"
+	# 				dirs_ok["_$j"]="1"
+					DIRS="${DIRS}    $j) ${i}\n"
+				else
+					dirs_ok[$j]=""
+				fi
+	# 			echo "$j ;:$i : ${dirs_ok[_$j]}"
+			done
+		else
+			msg2 "Availables directory"
+			echo -e "$DIRS" 
+			NB_DIR=$( rid "Please select directory : (\"q\" to quit)" )
+		fi
+	done
+}
+
+# When complete (Whether successfully or unsuccessfully)
+inst_complete() {
+	
+	msg "Installation Complete" 
+	
+	OPT=$( rid "Please choose / Gelieve te kiezen / Bitte wählen / Scegli / Vennligst velg / Por favor elija\n1) Reboot\n2) Shutdown\n3) Virtual Console" )	
+	while [[ "$OPT" != "1" && "$OPT" != "2" && "$OPT" != "3" ]]; do
+		OPT=$( rid "Please choose / Gelieve te kiezen / Bitte wählen / Scegli / Vennligst velg / Por favor elija\n1) Reboot\n2) Shutdown\n3) Virtual Console" )
+	done
+  
+   case "$OPT" in
+       "1") reboot
+            ;;
+       "2") shutdown -h 0
+            ;;
+         *) clear
+         
+            if [[ ! $(ping -c 1 www.archlinux.org) ]]; then
+				echo -e "\nThe $VERSION Installation Framework requires an active internet connection. It can then be re-started with the following command: /initialise\n"
+            else 
+				echo -e "\nThe $VERSION Installation Framework can be re-started with the following command: /initialise\n"
+	        fi
+	        
+	        exit 0
+            ;;
+   esac
+}
+
+# Main body
+
+declare -A valid_kmap
+declare -A langue
+declare -A localisation_tab
+declare -A to_mount
+declare -A disks
+declare -A partoches
+declare -A dirs_ok
+declare -A dirs=(
+	[1]="boot"
+	[2]="home"
+	[3]="usr"
+	[4]="var"
+)
+
+	
+(( ! $NET )) && please_wait
+	set_console_kmap
+    # If no ethernet connection detected, then offer these options
+	id_system
+	while [[ ! $(ping -c 1 www.archlinux.org) ]]; do
+		msg "Network Error " 
+		NET=$( rid "\nPlease choose / Gelieve te kiezen / Bitte wählen / Scegli / Vennligst velg / Por favor elija\n1) Ethernet\n2) Wifi\n3) Exit" )
+		
+# 		dialog --backtitle "$VERSION" --title " Network Error " \
+# 		--menu $"\nPlease choose / Gelieve te kiezen / Bitte wählen / Scegli / Vennligst velg / Por favor elija\n" 0 0 3 \
+		
+# 	
+		case $NET in
+		"1") ether_connect 
+            ;;
+		"2") if [[ $WIFI_DEV != "" ]]; then
+				wifi_connect
+		     else
+		        msg " Network Error " --msgbox "\nNo Wifi Device Found!\n\n" 0 0
+		     fi
+            ;;
+         *) break
+			exit 1
+            ;;
+		esac
+	done
+	msg "Welcome to $VERSION"
+	if  [[ $(ping -c 1 www.archlinux.org) ]]; then
+		echo "1" > /tmp/net.ok
+		if ! mountpoint -q "/mnt"; then
+					
+			NUM_OPE=$( rid "Mount method\n1) Auto\n2) Manual" )
+			while [[ "$NUM_OPE" != "1" && "$NUM_OPE" != "2" ]]; do 
+				NUM_OPE=$( rid "Mount method\n1) Auto\n2) Manual" )		
+			done
+			case "$NUM_OPE" in 
+				1) mount_partition ;;
+				2)
+					msg "Mount your root partitions in /mnt and the others if needed.\nThen logout to relaunch the script" 
+					exit
+					
+				;;
+			esac
+		else
+			msg2 "/mnt is already mounted, assume it is your root partition"
+	# 	echo "$GRUB_INSTALL"
+			
+		fi
+# 	echo "${to_mount[@]}"
+		if [ "$( rid_continue "Do you want to mount a package cache directory ? [o/N]" )" == "o" ]; then
+	# 		[ ! -e "/mnt/var/cache/pacman/pkg" ] && mkdir "/mnt/var/cache/pacman/pkg"
+			CACHE_PAQUET=$( rid "Path to packages directory" )
+			
+		fi
+	
+		if [ "$( rid_continue "Install GRUB ?" )" == "o" ]; then
+			j=0
+			DISKS=
+			for i in $( lsblk -l | grep 'disk' | sed 's/[\t ].*//' | sort -u ); do
+				j=$((j+1))
+				disks[$j]="${i}"
+				disks[_$j]=1
+				DISKS="${DISKS}    $j) ${i} ($(lsblk -l | grep $i | grep 'disk' | awk '{print $4}' ))\n"
+			done
+			echo -e "$DISKS"
+			NB_DISK=$( rid "Please select the DISK where to install GRUB :" )
+			while [[ ${disks[_$NB_DISK]} != 1 ]]; do
+				NB_DISK=$( rid "Please select the DISK where to install GRUB :" )
+		# 		echo $ROOT_PARTITION ${partoches[_$NB_OTHER_PARTITION]}
+			done
+			GRUB_INSTALL="-l /dev/${disks[$NB_DISK]}"
+			msg "GRUB will be installed in /dev/${disks[$NB_DISK]}"
+		fi
+		
+		
+		if [ `uname -m` == "i686" ]; then
+			msg "WARNING : Automatic selection of i686 kernel"
+			sleep 2
+		fi
+		mount_setup
+		set_xkbmap
+# 		echo "/root/launchInstall.sh -k $vconsole $GRUB_INSTALL "/mnt" $LOCALISATION"
+		
+		/root/launchInstall.sh -k $vconsole $([ `uname -m` == "i686" ] && echo "-a i686" ) $GRUB_INSTALL -c /var/cache/pacman/pkg "/mnt" $LOCALISATION
+	fi
+	
+	# Whether successful or not, offer to reboot, shutdown, or exit to vc
+	inst_complete

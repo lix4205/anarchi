@@ -1,0 +1,638 @@
+# This file contains arrays for set the good language 
+# in softs like libreoffice, thunderbird, firefox or kde
+#
+# Some language like "fr", "de"... doesn't have a sublang so it's ok...
+# 
+# It should be ok for :
+# english (US, South Africa),
+# portuguese (brazil), 
+# spanish ( Argentina, Chile ),
+# chinese ( set to Simplified )
+# 
+# Sorry for the others, but give your arrays and I will add it...
+# 
+# 
+#
+
+
+
+#
+#
+# Availables languages for KDE
+#
+#
+# ar Arabic                               
+# bg Bulgarian                            
+# bs Bosnian                              
+# ca Catalan                              
+# ca@valencia Catalan (Valencian)         
+# cs Czech                                
+# da Danish                               
+# de German                               
+# el Greek                                
+# en_gb British English                   
+# eo Esperanto                            
+# es Spanish                              
+# et Estonian
+# eu Basque
+# fa Farsi
+# fi Finnish
+# fr French
+# ga Irish
+# gl Galician
+# he Hebrew
+# hi Hindi
+# hr Croatian
+# hu Hungarian
+# ia Interlingua
+# id Indonesian
+# is Icelandic
+# it Italian
+# ja Japanese
+# kk Kazakh
+# km Khmer
+# ko Korean
+# lt Lithuanian
+# lv Latvian
+# mr Marathi
+# nb Norwegian Bokmal
+# nds Low Saxon
+# nl Dutch
+# nn Norwegian Nynorsk
+# pa Panjabi/Punjabi
+# pl Polish
+# pt Portuguese
+# pt_br Brazilian Portuguese
+# ro Romanian
+# ru Russian
+# sk Slovak
+# sl Slovenian
+# sr Serbian
+# sv Swedish
+# tr Turkish
+# ug Uyghur
+# uk Ukrainian
+# wa Walloon
+# zh_cn Chinese Simplified
+# zh_tw Chinese Traditional
+
+#
+#
+# Availables languages for thunderbird
+#
+#
+# ar Arabic 
+# ast Asturian 
+# be Belarusian 
+# bg Bulgarian 
+# bn-bd Bengali (Bangladesh) 
+# br Breton 
+# ca Catalan 
+# cs Czech 
+# cy Welsh 
+# da Danish 
+# de German 
+# dsb Lower Sorbian 
+# el Greek 
+# en-gb English (British) 
+# en-us English (US) 
+# es-ar Spanish (Argentina) 
+# es-es Spanish (Spain) 
+# et Estonian 
+# eu Basque 
+# fi Finnish 
+# fr French 
+# fy-nl Frisian 
+# ga-ie Irish 
+# gd Gaelic (Scotland) 
+# gl Galician 
+# he Hebrew 
+# hr Croatian 
+# hsb Upper Sorbian 
+# hu Hungarian 
+# hy-am Armenian 
+# id Indonesian 
+# is Icelandic 
+# it Italian 
+# ja Japanese 
+# ko Korean 
+# lt Lithuanian 
+# nb-no Norwegian (Bokmål) 
+# nl Dutch 
+# nn-no Norwegian (Nynorsk) 
+# pa-in Punjabi (India) 
+# pl Polish 
+# pt-br Portuguese (Brazilian) 
+# pt-pt Portuguese (Portugal) 
+# rm Romansh 
+# ro Romanian 
+# ru Russian 
+# si Sinhala 
+# sk Slovak 
+# sl Slovenian 
+# sq Albanian 
+# sr Serbian 
+# sv-se Swedish 
+# ta-lk Tamil (Sri Lanka) 
+# tr Turkish 
+# uk Ukrainian 
+# vi Vietnamese 
+# zh-cn Chinese (Simplified) 
+# zh-tw Chinese (Traditional) 
+
+#
+#
+# Availables languages for firefox
+#
+#
+# ach Acholi
+# af Afrikaans
+# an Aragonese
+# ar Arabic
+# as Assamese
+# ast Asturian
+# az Azerbaijani
+# be Belarusian
+# bg Bulgarian
+# bn-bd Bengali (Bangladesh)
+# bn-in Bengali (India)
+# br Breton
+# bs Bosnian
+# ca Catalan
+# cs Czech
+# cy Welsh
+# da Danish
+# de German
+# dsb Lower Sorbian
+# el Greek
+# en-gb English (British)
+# en-us English (US)
+# en-za English (South African)
+# eo Esperanto
+# es-ar Spanish (Argentina)
+# es-cl Spanish (Chile)
+# es-es Spanish (Spain)
+# es-mx Spanish (Mexico)
+# et Estonian
+# eu Basque
+# fa Persian
+# ff Fulah
+# fi Finnish
+# fr French
+# fy-nl Frisian
+# ga-ie Irish
+# gd Gaelic (Scotland)
+# gl Galician
+# gu-in Gujarati (India)
+# he Hebrew
+# hi-in Hindi (India)
+# hr Croatian
+# hsb Upper Sorbian
+# hu Hungarian
+# hy-am Armenian
+# id Indonesian
+# is Icelandic
+# it Italian
+# ja Japanese
+# kk Kazakh
+# km Khmer
+# kn Kannada
+# ko Korean
+# lij Ligurian
+# lt Lithuanian
+# lv Latvian
+# mai Maithili
+# mk Macedonian
+# ml Malayalam
+# mr Marathi
+# ms Malay
+# nb-no Norwegian (Bokmål)
+# nl Dutch
+# nn-no Norwegian (Nynorsk)
+# or Oriya
+# pa-in Punjabi (India)
+# pl Polish
+# pt-br Portuguese (Brazilian)
+# pt-pt Portuguese (Portugal)
+# rm Romansh
+# ro Romanian
+# ru Russian
+# si Sinhala
+# sk Slovak
+# sl Slovenian
+# son Songhai
+# sq Albanian
+# sr Serbian
+# sv-se Swedish
+# ta Tamil
+# te Telugu
+# th Thai
+# tr Turkish
+# uk Ukrainian
+# uz Uzbek
+# vi Vietnamese
+# xh Xhosa
+# zh-cn Chinese (Simplified)
+# zh-tw Chinese (Traditional)
+
+
+#
+#
+# Availables languages for libreoffice
+#
+#
+# af Afrikaans
+# am Amharic
+# ar Arabic
+# as Assamese (India)
+# ast Asturianu
+# be Belarusian
+# bg Bulgarian
+# bn Bengali
+# bn-IN Bengali (India)
+# bo Tibetan
+# br Breton
+# brx Bodo
+# bs Bosnian
+# ca Catalan
+# ca-valencia Catalan (Valencia)
+# cs Czech
+# cy Welsh
+# da Danish
+# de German
+# dgo Dogri
+# dz Dzongkha
+# el Greek
+# en-GB English (GB)
+# en-ZA English (ZA)
+# eo Esperanto
+# es Spanish
+# et Estonian
+# eu Basque
+# fa Persian
+# fi Finnish
+# fr French
+# ga Irish
+# gd Gaelic (Scottish)
+# gl Galician
+# gu Gujarati
+# he Hebrew
+# hi Hindi
+# hr Croatian
+# hu Hungarian
+# id Indonesian
+# is Icelandic
+# it Italian
+# ja Japanese
+# ka Georgian
+# kk Kazakh
+# km Khmer (Cambodia)
+# kmr-Latn Kurdish
+# kn Kannada
+# ko Korean
+# kok Konkani
+# ks Kashmiri
+# lb Luxembourgish
+# lo Lao
+# lt Lithuanian
+# lv Latvian
+# mai Maithili
+# mk Macedonian
+# ml Malayalam
+# mn Mongolian
+# mni Manipuri
+# mr Marathi
+# my Burmese
+# nb Norwegian Bokmal
+# ne Nepali
+# nl Dutch
+# nn Norwegian Nynorsk
+# nr Ndebele (South)
+# nso Northern Sotho
+# oc Occitan
+# om Oromo
+# or Oriya
+# pa-IN Punjabi (India)
+# pl Polish
+# pt Portuguese
+# pt-BR Portuguese (Brasil)
+# ro Romanian
+# ru Russian
+# rw Kinyarwanda
+# sa-IN Sanskrit (India)
+# sat Santali
+# sd Sindhi
+# sdk Software Development Kit for LibreOffice maintenance branch
+# si Singhalese
+# sid Sidama
+# sk Slovak
+# sl Slovenian
+# sq Albanien
+# sr Serbian
+# sr-Latn Serbian (Latin)
+# ss Swati
+# st Southern Sotho
+# sv Swedish
+# sw-TZ Swahili (Tanzania)
+# ta Tamil
+# te Telugu
+# tg Tajik
+# th Thai
+# tn Tswana
+# tr Turkish
+# ts Tsonga
+# tt Tatar
+# ug Uighur
+# uk Ukrainian
+# uz Uzbek
+# ve Venda
+# vi Vietnamese
+# xh Xhosa
+# zh-CN Chinese (simplified)
+# zh-TW Chinese (traditional)
+# zu Zulu
+
+# [ "$LOCALISATION" == "" ] && exit 1
+# [ -z $LA_LOCALE ] && LANGUAGE_2="$( echo $LANG | sed "s/\..*//")" || LANGUAGE_2="$( echo "${LA_LOCALE,,}" | sed "s/_.*//")"
+# declare -A mozilla_lang=( [$LOCALISATION]="$LOCALISATION" )
+# declare -A lo_lang=( [$LOCALISATION]="$LOCALISATION" )
+# declare -A kde_lang=( [$LOCALISATION]="$LOCALISATION" )
+
+# This function search in pacman database to see if there is a package nammed *-$LALANGUE
+echo_tab() {
+	local SOFT=$( echo $1 | sed "s/-.*//" )
+	local LANGUAGE_2=$2
+	local lang="$( echo $2 | sed "s/.*_//" | sed "s/.*-//" )"
+	echo "[${lang,,}_$SOFT]=\"$2\""
+	
+}
+
+# this fonction return the package traduction 
+trans_packages() {
+	local SOFT=$( echo $1 | sed "s/-.*//" )
+	local LOCALISATION=$2
+	[ -z $LOCALISATION ] && LANGUAGE_2="us" || LANGUAGE_2="$( echo "${LOCALISATION,,}" | sed "s/.*_\(.*\)\..*/\1/" )"
+	case $LANGUAGE_2 in 
+		fr|de|it) echo -en $1-$LANGUAGE_2;;
+	
+		*)
+			if [ ! -z ${soft_trans[$LANGUAGE_2$(echo -ne "_")$SOFT]} ]; then
+				LANGUAGE_2="${soft_trans[$LANGUAGE_2$(echo -ne "_")$SOFT]}"
+				echo -ne $1-$LANGUAGE_2
+			else
+# 				show_pacman_for_lang "$1" "$LANGUAGE_2" >&2
+				caution "31" "33" "%s" "Les paquets de langues de $1 n'ont pas pu etre identifié !" 
+			fi
+		;;
+	esac
+	
+}
+
+show_pacman_for_lang() {
+	i=1;
+	local SOFT=$1
+	pacman -Ss "$1" | while read -r ;do 
+		[ $((i%2)) -eq 1 ] && _langages[$i]="$( echo $REPLY | sed "s/.*$SOFT-\(.*\) .*/\1/")"
+		[ $((i%2)) -eq 1 ] && _langages[$((i+1))]="$( echo $REPLY | sed "s/.*\/\(.*\) .*/\1/" )"
+		[ $((i%2)) -eq 0 ] && _langages[$i]+="$REPLY"
+		[ $((i%2)) -eq 0 ] && echo  "$( echo_tab "$( echo "$SOFT" | sed "s/-.*//" )" "$( echo ${_langages[$((i-1))]} | sed "s/$SOFT-//" )"  ) : ${_langages[$i]}"
+		i=$((i+1))
+	done
+}
+	
+######
+# English
+# French
+# Spanish ( Europe )
+# Portuguese
+# Chinese
+#######
+# Firefox
+
+MOZILLA="mozilla"
+
+
+declare -A _langages
+# show_pacman_for_lang "libreoffice-still" 
+declare -A soft_trans=(
+
+[za_thunderbird]="en-za"
+[us_thunderbird]="en-us"
+[gb_thunderbird]="en-gb"
+[es_thunderbird]="es-es"			
+[pt_thunderbird]="pt-pt"
+[br_thunderbird]="pt-br"
+[cn_thunderbird]="zh-cn"
+
+[mx_thunderbird]="es-mx"
+[ar_thunderbird]="es-ar"
+[cl_thunderbird]="es-cl"
+
+[bo_thunderbird]="es-es"
+[cr_thunderbird]="es-es"
+[co_thunderbird]="es-es"
+[do_thunderbird]="es-es"
+[ec_thunderbird]="es-es"
+[es_thunderbird]="es-es"
+[gt_thunderbird]="es-es"
+[hn_thunderbird]="es-es"
+[ni_thunderbird]="es-es"
+[pa_thunderbird]="es-es"	
+
+[za_firefox]="en-za"
+[us_firefox]="en-us"
+[gb_firefox]="en-gb"
+[es_firefox]="es-es"			
+[pt_firefox]="pt-pt"
+[br_firefox]="pt-br"
+[cn_firefox]="zh-cn"
+
+[mx_firefox]="es-mx"
+[ar_firefox]="es-ar"
+[cl_firefox]="es-cl"
+
+[bo_firefox]="es-es"
+[cr_firefox]="es-es"
+[co_firefox]="es-es"
+[do_firefox]="es-es"
+[ec_firefox]="es-es"
+[es_firefox]="es-es"
+[gt_firefox]="es-es"
+[hn_firefox]="es-es"
+[ni_firefox]="es-es"
+[pa_firefox]="es-es"	
+
+[za_libreoffice]="en-ZA"
+[us_libreoffice]="en-GB"
+[gb_libreoffice]="en-GB"
+[es_libreoffice]="es-es"
+[pt_libreoffice]="pt-pt"
+[br_libreoffice]="pt-BR"
+[cn_libreoffice]="zh-CN"
+
+[mx_libreoffice]="es-mx"
+[ar_libreoffice]="es-ar"
+[cl_libreoffice]="es-cl"			
+
+[bo_libreoffice]="es-es"
+[cr_libreoffice]="es-es"
+[co_libreoffice]="es-es"
+[do_libreoffice]="es-es"
+[ec_libreoffice]="es-es"
+[es_libreoffice]="es-es"
+[gt_libreoffice]="es-es"
+[hn_libreoffice]="es-es"
+[ni_libreoffice]="es-es"
+[pa_libreoffice]="es-es"
+
+[za_kde]="en_gb"
+[us_kde]="en_gb"
+[gb_kde]="en_gb"
+[es_kde]="es"
+[br_kde]="pt_br"
+[cn_kde]="zh_cn"
+
+# ######
+# # Spanish ( South America )
+# #######
+[bo_kde]="es"
+[cr_kde]="es"
+[co_kde]="es"
+[do_kde]="es"
+[ec_kde]="es"
+[es_kde]="es"
+[gt_kde]="es"
+[hn_kde]="es"
+[ni_kde]="es"
+[pa_kde]="es"
+			
+			)
+# 			
+# 		trans_packages "firefox-l10n" "$LANG"
+# 		trans_packages "firefox-l10n" "en_DK.UTF-8"
+# 		trans_packages "thunderbird-l10n" "$LANG"
+# 		trans_packages "thunderbird-l10n" "en_DK.UTF-8"
+# 		trans_packages "libreoffice-still" "$LANG"
+# 		trans_packages "libreoffice-still" "en_DK.UTF-8"
+# 		trans_packages "kde" "$LANG"
+# 		trans_packages "kde" "en_DK.UTF-8"
+# 	
+	
+	
+	mozilla_lang+=(
+			[mozilla_za]="en-za"
+			[mozilla_us]="en-us"
+			[mozilla_gb]="en-gb"
+			[mozilla_es]="es-es"			
+			[mozilla_pt]="pt-pt"
+			[mozilla_br]="pt-br"
+			[mozilla_cn]="zh-cn"
+			
+			[mozilla_mx]="es-mx"
+			[mozilla_ar]="es-ar"
+			[mozilla_cl]="es-cl"
+			
+			[mozilla_bo]="es-es"
+			[mozilla_cr]="es-es"
+			[mozilla_co]="es-es"
+			[mozilla_do]="es-es"
+			[mozilla_ec]="es-es"
+			[mozilla_es]="es-es"
+			[mozilla_gt]="es-es"
+			[mozilla_hn]="es-es"
+			[mozilla_ni]="es-es"
+			[mozilla_pa]="es-es"	
+		)
+# LibreOffice
+		libreoffice_lang+=(
+			[libreoffice_za]="en-ZA"
+			[libreoffice_us]="en-GB"
+			[libreoffice_gb]="en-GB"
+			[libreoffice_es]="es-es"
+			[libreoffice_pt]="pt-pt"
+			[libreoffice_br]="pt-BR"
+			[libreoffice_cn]="zh-CN"
+			
+			[libreoffice_mx]="es-mx"
+			[libreoffice_ar]="es-ar"
+			[libreoffice_cl]="es-cl"			
+			
+			[libreoffice_bo]="es-es"
+			[libreoffice_cr]="es-es"
+			[libreoffice_co]="es-es"
+			[libreoffice_do]="es-es"
+			[libreoffice_ec]="es-es"
+			[libreoffice_es]="es-es"
+			[libreoffice_gt]="es-es"
+			[libreoffice_hn]="es-es"
+			[libreoffice_ni]="es-es"
+			[libreoffice_pa]="es-es"			
+		)
+# PLasMA
+		kde_lang+=(
+			[kde_za]="en_gb"
+			[kde_us]="en_gb"
+			[kde_gb]="en_gb"
+			[kde_es]="es"
+			[kde_br]="pt_br"
+			[kde_cn]="zh_cn"
+			
+			[kde_bo]="es"
+			[kde_cr]="es"
+			[kde_co]="es"
+			[kde_do]="es"
+			[kde_ec]="es"
+			[kde_es]="es"
+			[kde_gt]="es"
+			[kde_hn]="es"
+			[kde_ni]="es"
+			[kde_pa]="es"
+		)      
+		
+	
+# 		exit 
+
+# case "$LANGUAGE_2" in
+# 	za|us|gb|epo|pt|br|cn|es)
+# 	echo "ceci est inutile !"
+# 	;;
+# 	latam) 
+# ######
+# # Spanish ( South America )
+# #######
+# 		case "$LA_LOCALE" in
+# #	Firefox
+# #		America/Mexico
+# 			es_MX.UTF-8) mozilla_lang=( [latam]="es-mx" )	;;
+# #		America/Argentina
+# 			es_AR.UTF-8 ) mozilla_lang=( [latam]="es-ar" ) ;; 
+# #	 	America/Chile
+# 			es_CL.UTF-8) mozilla_lang=( [latam]="es-cl" ) ;;
+# #		America...
+# # 			 es_BO.UTF-8
+# # 			|es_CO.UTF-8
+# # 			|es_CR.UTF-8
+# # 			|es_DO.UTF-8
+# # 			|es_EC.UTF-8
+# # 			|es_ES.UTF-8
+# # 			|es_GT.UTF-8
+# # 			|es_HN.UTF-8
+# # 			|es_NI.UTF-8
+# # 			|es_PA.UTF-8
+# # 			)
+# # 			mozilla_lang
+# # 			=( [latam]="es-es" ) ;;
+# 			
+# 			*) mozilla_lang_lang=( $( echo "$LA_LOCALE" | sed "s/_.*//") )
+# 				
+# 		esac
+# #	LibreOffice
+# 		lo_lang=(
+# 			[latam]="es"
+# 		)
+# #	PLASMA
+# 		kde_lang=(
+# 			[latam]="es"
+# 		)	
+# 	;;
+# esac

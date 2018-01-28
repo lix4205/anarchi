@@ -1,0 +1,378 @@
+
+# This script is executed at the end of the installation
+# Don't forget you are chrooted in the fresh install while it run
+# Put your stuff at the end of this file..
+# 
+#
+# Some variables you can use :
+# 	Username : NAME_USER=
+# 	Les services systemd SYSTD_SOFT=
+# 	Le disque sur lequel grub sera installé GRUB_DISK=
+# 	L'interface reseau choisie NFSROOT=
+# 	L'environnement de bureau DE=
+#	L'architecture de la distribution ARCH=
+# 	Le display manager DM=
+# 	Le codage clavier X11 $X11_KEYMAP=
+
+# BEGIN USER CONFIG
+
+ARCH_PACKAGES="$( [[ "$ARCH" == "x64" ]] && echo "x86_64" || echo "$ARCH" )"
+
+# random background LIGHTDM
+if [[ $DM == "lightdm" ]]; then
+	IMG_BG=$(find "/tmp/files/imgs/" -maxdepth 1 -type f | shuf | head -n 1 )
+	EXT_BG_NAME=$( echo "$IMG_BG" | sed "s/.*\.//")
+	BG_NAME="bg.$EXT_BG_NAME"
+	cp "$IMG_BG" /usr/share/pixmaps/$BG_NAME
+	sed -i "s/.*background=.*/background=\/usr\/share\/pixmaps\/$BG_NAME/" "/etc/lightdm/lightdm-gtk-greeter.conf"                
+fi
+# END
+
+
+# BEGIN GUI_EDITOR for edit pkgbuild in yaourt 
+# Used to complete xinitrc for slim and nodm
+declare -A binde=(
+	[plasma]="startkde"
+	[gnome]="gnome-session"
+	[cinnamon]="cinnamon-session"
+	[mate]="mate-session"
+	[lxde]="startlxde"
+	[xfce]="startxfce4"
+	[lxqt]="startlxqt"
+	[fluxbox]="startfluxbox"
+	[enlightenment]="enlightenment_start"
+
+)
+# ${dm_editor} is a tab which contains the editor list associated with the DE
+declare -A dm_editor=(
+	[e_plasma]="kate"
+	[e_gnome]="gedit"
+	[e_mate]="pluma"
+	[e_lxde]="leafpad"
+	[e_xfce]="mousepad"
+	[e_lxqt]="leafpad"
+# 	[e_fluxbox]="nano"
+)
+[[ -z ${dm_editor[e_$DE]} ]] && GUI_EDITOR="${dm_editor[e_$DE]}" &&
+sed -i "s/export VISUAL=.*/export VISUAL=\"\$(if [[ -n \$DISPLAY ]]; then echo '$GUI_EDITOR'; else echo 'nano'; fi)\"/" /home/*/.bashrc
+# # USELESS echo -e "export VISUAL=\"\$(if [[ -n \$DISPLAY ]]; then echo '$GUI_EDITOR'; else echo 'nano'; fi)\""  >> "/etc/skel/.bashrc"
+# # END
+LOG_EXE="/tmp/anarchi.log"
+
+# # BEGIN fstab perso & mount new entry...
+# Pacman need architecture for i686 installation from x64 
+# so we will use $pacman as pacman --arch (x86_64/i686)
+pacman="pacman --arch $ARCH_PACKAGES"
+yaourt="yaourt --arch $ARCH_PACKAGES"
+# I use this directory to mount my NFS server...
+DIR_SRV=/media/srv
+# ...with this IP...
+IP_SRV="192.168.1.5"
+# Later, I'll copy my NAME_USER config from DIR_USR_CONF on my server...
+DIR_USR_CONF=$DIR_SRV/confs
+# DIR_USR_CONF=/tmp/files/confs
+# DIR_USR_CONF=$DIR_SRV/users
+# Default user conf
+DEFAULT_USER="lix"
+# Write in fstab
+! cat /etc/fstab | grep $IP_SRV >> /dev/null && echo -e "# $IP_SRV:/ on $DIR_SRV\n$IP_SRV:/	$DIR_SRV	nfs    x-systemd.automount,x-systemd.device-timeout=1s   0 0" >> /etc/fstab
+# # USER DIR Bind from srv on fstab
+# echo "$DIR_USR_CONF                       /home            none    bind   0       0" >> /etc/fstab
+
+[[ ! -e /media/srv ]] && mkdir -p /media/{srv,tmp} && echo "==> Creating directories /media/{srv,tmp}"
+echo "==> Wait while mounting $DIR_SRV" && mount $DIR_SRV
+# # END fstab
+
+# BEGIN  install packages in files/de/yaourt.conf via AUR. 
+# files/de/yaourt.conf is empty by default except when we install lxqt desktop ( qterminal is in AUR repository )
+if [ "$LIST_YAOURT" != "" ]; then
+	rep=
+	while [[ "$rep" == "" ]]; do
+		echo -en "\033[01;37m  -> Install AUR packages Y/n ?\033[00m ( $LIST_YAOURT ) "
+		read -n 1 rep
+		case "$rep" in 
+			o|O|y|Y)
+				echo "$LIST_YAOURT install" 
+				su $NAME_USER -c "yaourt --arch $ARCH -Sy --noconfirm $LIST_YAOURT"
+				break				
+			;;
+			n|N)
+				break
+			;;
+			*) rep= ;;
+		
+		esac
+	done
+fi
+# # BEGIN fill .bash_history with usefull command for starting
+echo "
+systemctl stop $DM
+systemctl start $DM
+systemctl start $NAME_USER
+systemctl stop $NAME_USER
+systemctl start dux
+systemctl stop dux
+systemctl stop media-srv.automount
+systemctl daemon-reload
+systemctl poweroff
+systemctl reboot
+ip addr
+fdisk -l
+df -h
+du -h -d 1 .
+mount /dev/sda1 /media/tmp
+systemctl status $NFSROOT
+su - $NAME_USER
+modprobe -a vboxdrv vboxnetadp vboxnetflt vboxpci
+rmdir /var/cache/pacman/pkg/ && ln -s $DIR_SRV/packages/$ARCH/pkg/ /var/cache/pacman/
+mv /var/cache/pacman/pkg/* /media/srv/packages/x64/pkg/
+rm /var/cache/pacman/pkg/*
+ls -l /var/cache/pacman/pkg
+pacman -Syu
+journalctl -fn 50
+journalctl -fn 50 -u $DM
+bash $DIR_SRV/scripts/arch-utils.sh
+mount $DIR_SRV/
+
+
+" > /root/.bash_history
+# # END .bash_history
+
+echo "DIR_SRV=/media/srv
+DIR_SCR=\$DIR_SRV/scripts" >> /root/.bashrc
+
+# BEGIN X11 KEYBOARD CONFIG ( Ctrl + Alt + backspace kill xserver)
+# It's for a french keyboard ! Remove latin9 !!!
+echo -e "Section \"InputClass\"\n\tIdentifier \"system-keyboard\"\n\tMatchIsKeyboard \"on\"\n\tOption \"XkbLayout\" \"${X11_KEYMAP}\"\n\tOption \"XkbModel\" \"pc105\"\n\tOption \"XkbVariant\" \"latin9\"\n\tOption \"XkbOptions\" \"terminate:ctrl_alt_bksp\"\nEndSection" > /etc/X11/xorg.conf.d/00-keyboard.conf
+# END
+
+# BEGIN configurations by the desktop-environnement
+		echo -n "==> Installation de "
+case $DE in
+	plasma)
+		echo -n "yakuake"
+		$pacman -Sy --noconfirm --needed yakuake >> $LOG_EXE 2>&1 && echo "...ok" || echo -e "...echec !\n==> Consultez $LOG_EXE  pour plus de détail"
+	;;
+	# Cinnamon has tilda as terminal
+	mate|xfce|gnome) 
+		echo -n "tilda"
+		$pacman -Sy --noconfirm --needed tilda >> $LOG_EXE 2>&1 && echo "...ok" || echo -e "...echec !\n==> Consultez $LOG_EXE  pour plus de détail"
+	;;
+	lxqt) : ;;
+# 		fluxbox)
+# 			su $NAME_USER -c "echo \"exec startfluxbox\" > /home/$NAME_USER/.xinitrc" 
+# 		;;
+esac
+case $DM in
+	sddm)
+# 			$pacman -Sy --noconfirm yakuake
+#			Generate sddm.conf and change theme
+		sddm --example-config > /etc/sddm.conf
+		sed -i "s/maui/breeze/" /etc/sddm.conf
+	;;
+# 		gdm) : ;;
+# 		lightdm) : ;;
+# 		lxdm) : ;;
+	slim) :
+		su $NAME_USER -c "echo \"exec ${binde[$DE]}\" > /home/$NAME_USER/.xinitrc"
+	;;
+	nodm) :
+		sed -i "s/^NODM_USER=.*/NODM_USER=$NAME_USER/" /etc/nodm.conf
+		sed -i "s/^NODM_XSESSION=.*/NODM_XSESSION=\/home\/$NAME_USER\/.xinitrc/" /etc/nodm.conf
+# 			echo -e "NODM_USER=$NAME_USER\nNODM_XSESSION=/home/$NAME_USER/.xinitrc" >> /etc/nodm.conf
+# 			su $NAME_USER -c "echo \"exec startfluxbox\" > /home/$NAME_USER/.xinitrc" 
+		su $NAME_USER -c "echo \"exec ${binde[$DE]}\" > /home/$NAME_USER/.xinitrc && chmod +x /home/$NAME_USER/.xinitrc" 
+# 			chown 
+		echo "#%PAM-1.0
+
+auth      include   system-login
+account   include   system-login
+password  include   system-login
+session   include   system-login" > "/etc/pam.d/nodm"
+	;;
+esac
+# END
+
+
+# BEGIN configuration by $NAME_USER 
+# BEGIN lix CONFIG
+if [ "$NAME_USER" == "lix" ]; then
+# ln -s $DIR_USR_CONF/$NAME_USER/CALIS ~/Calis
+# 	ln -s $DIR_USR_CONF/$NAME_USER/DIVERS ~/Divers
+# 	ln -s $DIR_USR_CONF/$NAME_USER/JEUX ~/Jeux
+# 	ln -s $DIR_USR_CONF/$NAME_USER/Telechargements ~/Téléchargements
+# 	ln -s $DIR_USR_CONF/$NAME_USER/Videos ~/Vidéos
+# 	ln -s $DIR_USR_CONF/$NAME_USER/Documents ~/
+# 	ln -s $DIR_USR_CONF/$NAME_USER/Music ~/
+# 	ln -s $DIR_USR_CONF/$NAME_USER/Pictures ~/
+	su $NAME_USER -c "echo \"DIR_SRV=/media/srv
+	DIR_SCR=\\\$DIR_SRV/scripts\" >> ~/.bashrc"
+	case $DM in
+		sddm)
+			sed -i "s/User=.*/User=$NAME_USER/" /etc/sddm.conf
+			sed -i "s/Session=.*/Session=$DE.desktop/" /etc/sddm.conf
+		;;
+# 		gdm) : ;;
+# 		lightdm) : ;;
+# 		lxdm) : ;;
+# 		slim) : ;;
+		nodm) :
+		;;
+	esac
+	case $DE in
+		plasma)
+# 			$pacman -S --noconfirm kdeconnect
+		;;
+# 		xfce)
+# 		;;
+# 		mate)
+# 		;;
+		lxqt) :
+		;;
+	esac
+fi
+# END
+
+# BEGIN Calis CONFIG
+if [ "$NAME_USER" == "calis" ]; then
+	su $NAME_USER -c "ln -s $DIR_USR_CONF/lix/CALIS ~/Calis
+	ln -s $DIR_USR_CONF/lix/DIVERS ~/Divers
+	ln -s $DIR_USR_CONF/lix/JEUX ~/Jeux
+	ln -s $DIR_USR_CONF/lix/Telechargements ~/Téléchargements
+	ln -s $DIR_USR_CONF/lix/Videos ~/Vidéos
+	ln -s $DIR_USR_CONF/lix/Documents ~/
+	ln -s $DIR_USR_CONF/lix/Music ~/
+	ln -s $DIR_USR_CONF/lix/Pictures ~/
+	cp $DIR_USR_CONF/lix/DIVERS/softs/AutoScan-Network-Linux-1.50.bin.tar.gz /tmp
+	cd /tmp
+	tar xzf AutoScan-Network-Linux-1.50.bin.tar.gz
+	"
+#	BEGIN AutoScan Network et VirtualBox
+	if [ "$ARCH" == "x64"  ]; then
+		:
+#		Il faut installer le fichier de police ttf-dejavu pour AutoScan Network
+# 		pacman -S ttf-dejavu archiso virtualbox
+	else
+#L'installation d'AutoScan Network ne marche pas en x64 (???) Voir plus bas pour le faire fonctionner...
+	# ... Mais on peut reprendre une install 32 bits existante...
+	# cp -a /media/tmp/opt/AutoScan /opt
+	# cp -v /media/tmp/usr/share/applications/autoscan-network.desktop /usr/share/applications
+	# Et peut-être executer ces deux commandes si il y a un problème de permission...
+	# chown root:root /opt/AutoScan/bin/autoscan-network-daemon
+	# chmod +sx /opt/AutoScan/bin/autoscan-network-daemon
+		/tmp/AutoScan-Network-Linux-1.50.sh	
+		$pacman -S ttf-dejavu archiso virtualbox
+	fi
+#	END AutoScan Network & VirtualBox
+
+# 	modules VirtualBox a charger au démarrage...
+# 	echo -e "vboxdrv\nvboxnetadp\nvboxnetflt\nvboxpci" > /etc/modules-load.d/virtualbox.conf
+	usermod -l user calis
+	usermod -m -d /home/user user
+	
+fi
+# END
+
+
+
+# BEGIN CUX CONFIG
+if [ "$NAME_USER" == "coutaud" ]; then
+	usermod -u 1001 $NAME_USER
+	$pacman -S --noconfirm aisleriot digikam skanlite gcompris
+fi
+# END
+[[ "$NAME_USER" == "dux" ]] && ! getent passwd $NAME_USER | grep -q 594 && usermod -u 594 $NAME_USER
+if [[ -e $DIR_USR_CONF/$NAME_USER ]]; then
+	su $NAME_USER -c "bash /tmp/files/extras/copyconf.sh \"$DIR_USR_CONF/$NAME_USER\" $NAME_USER $DE" 
+	su - $NAME_USER -c "cp -PR $DIR_USR_CONF/$NAME_USER/* ."
+else
+	su $NAME_USER -c "bash /tmp/files/extras/copyconf.sh \"$DIR_USR_CONF/$DEFAULT_USER\" $NAME_USER $DE"; 
+	su - $NAME_USER -c "cp -PR $DIR_USR_CONF/$DEFAULT_USER/* ."
+fi
+[[ $? -eq 0 ]] && echo "==> La configuration de $NAME_USER à été créée !"
+# Some aliases
+su $NAME_USER -c "echo -e \"# Some aliases\\nalias lsl=\\\"ls -l\\\"\nalias lsa=\\\"ls -a\\\" \" >> /home/$NAME_USER/.bashrc"
+# BEGIN DUX CONFIG
+if [ "$NAME_USER" == "dux" ]; then
+	echo "==> Creation de la session $NAME_USER" 
+#	Mon service perso
+	cp $DIR_SRV/dists-extra/extras/services/auto-launcher.service /usr/lib/systemd/system/$NAME_USER.service
+	# cp $DIR_SRV/dists-extra/extras/auto_launcher.sh /usr/bin/
+	[[ "$DM" == "lightdm" || "$DM" == "lxdm" ]] && sed -i "s/BusName=org.freedesktop.DisplayManager/#BusName=org.freedesktop.DisplayManager/" /usr/lib/systemd/system/$NAME_USER.service
+
+	cp /usr/lib/systemd/system/$NAME_USER.service /usr/lib/systemd/system/auto-launcher\@.service
+	# sed -i "s/auto_launcher.sh .*/auto_launcher.sh $NAME_USER $DM $DE/" /usr/lib/systemd/system/$NAME_USER.service
+	sed -i "s/ExecStart.*auto_launcher.sh .*/ExecStart=\/usr\/share\/dists-extra\/extras\/auto_launcher.sh $NAME_USER $DM $DE/" /usr/lib/systemd/system/$NAME_USER.service
+	sed -i "s/auto_launcher.sh .*/auto_launcher.sh %I $DM $DE/" /usr/lib/systemd/system/auto-launcher\@.service
+
+	bash $DIR_SRV/dists-extra/extras/install_extras.sh
+	systemctl disable $DM
+	echo "systemctl disable $DM"
+	systemctl enable $NAME_USER.service
+	echo "systemctl enable $NAME_USER.service"
+
+# 	! getent passwd $NAME_USER | grep -q 594 && usermod -u 594 $NAME_USER
+
+	if [[ -f /etc/grub.d/40_custom ]]; then	
+		echo -n "==> Recherche d'une image..." 
+		DIR_IMGS=$DIR_SRV/BACKUP/.dux/Images/
+		# BEGIN Chrismas config !!!
+		[[ $( date +%m ) -eq 12 && $( date +%d ) -gt 8 ]] || [[ $( date +%m ) -eq 1 && $( date +%d ) -lt 15 ]] && [[ -e $DIR_IMGS/Christmas ]] && DIR_IMGS=$DIR_IMGS/Christmas
+		# END Chrismas config !!!
+
+		ln -s $DIR_IMGS /home/dux/
+		IMG_AP_HOME="$(su - dux -c "source $DIR_SRV/dists-extra/extras/rdm_img.sh;imgs land $DIR_IMGS" )"
+		rm /home/dux/Images
+		
+		if [[ ! -z $IMG_AP_HOME ]]; then
+			echo "ok" 
+			EXT_BG_NAME=$( echo "$IMG_AP_HOME" | sed "s/.*\.//")
+			BG_NAME="bg.$EXT_BG_NAME"
+			su $NAME_USER -c "cp \"$IMG_AP_HOME\" \"/tmp/$BG_NAME\""
+			cp "/tmp/$BG_NAME" /boot/
+# 			exit 1
+			sed -i "s/.*GRUB_BACKGROUND=.*/GRUB_BACKGROUND=\"\/boot\/$BG_NAME\"/" /etc/default/grub
+			sed -i "s/GRUB_GFXMODE=.*/GRUB_GFXMODE=0x14c/" /etc/default/grub
+		else
+			echo "echec !"
+		fi
+		# PXE Entry
+		echo "menuentry \"dux live - MATE (iPXE)\" {
+    linux /dux/vmlinuz add_efi_memmap ip=:::::eth0:dhcp nfsroot=192.168.1.5:/nfs/pxe/cadux boot=casper quiet splash netboot=nfs
+    initrd /dux/initrd.gz
+}
+
+" >> /etc/grub.d/40_custom
+		mkdir /boot/dux
+		cp $DIR_SRV/pxe/cadux/casper/{initrd.gz,vmlinuz} /boot/dux/
+	fi
+
+else
+	cp $DIR_SRV/dists-extra/extras/services/auto-launcher.service /etc/systemd/system/dux.service
+	sed -i "s/auto_launcher.sh .*/auto_launcher.sh dux $DM $DE/" /etc/systemd/system/dux.service
+
+	
+# 	cp $DIR_SRV/scripts/dux/dux.service /etc/systemd/system/
+# 	sed -i "s/init_dux_light.sh dm/init_dux_light.sh dm $DM $DE/" /etc/systemd/system/dux.service
+	[[ "$DM" == "lightdm" ]] && sed -i "s/BusName=org.freedesktop.DisplayManager/#BusName=org.freedesktop.DisplayManager/" /etc/systemd/system/dux.service
+fi
+# END 
+# Copie de la configuration pour DE
+# [[ "$NAME_USER" != "dux" ]] && { 
+# su $NAME_USER -c "id"
+# ls -la "$DIR_USR_CONF/$NAME_USER"
+
+# [[ -e $DIR_USR_CONF/$NAME_USER ]] && { su $NAME_USER -c "bash /tmp/files/extras/copyconf.sh \"$DIR_USR_CONF/$NAME_USER\" $NAME_USER $DE" || su $NAME_USER -c "bash /tmp/files/extras/copyconf.sh \"$DIR_USR_CONF/$DEFAULT_USER\" $NAME_USER $DE"; } && echo "==> La configuration de $NAME_USER à été créée !"
+
+# END
+#SSH PERSO
+# su $NAME_USER -c "cp -R /media/srv/users/lix/DIVERS/racine/etc/skel/.ssh /home/$NAME_USER/"
+# On force le démontager du partage
+until ! mountpoint -q $DIR_SRV; do
+        
+        umount $DIR_SRV >> /dev/null 2>&1
+        sleep 0.5
+done
+
+# END 
+

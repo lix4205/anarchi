@@ -1,0 +1,108 @@
+# README
+#
+# Ce script est destiné à installer la distribution ArchLinux avec un environnement de bureau minimal dans le cadre d'une utilisation basique ( Bureautique, Web/Mail, Multimedia ).
+# Il a été conçu afin d'installer ArchLinux depuis un système déjà opérationnel ( Voir en bas de page pour les distributions supportées... )
+#
+# Ce script peut aussi effectuer une installation sans disque destinée à être bootée en réseau ( paramètre "-n nfsroot" )...
+
+# Fonctionnement :
+# ATTENTION : On part du principe que la partition de notre future installation est formatée et montée sur le système hôte ! ( Hormis pour une installation sans disque... )
+#
+# Deux scripts permettent l'installation :
+# 	-> launchinstall.sh
+# 		Il sert à paramètrer l'installation.
+#		Un seul paramètre est requis, le dossier dans lequel installer.
+#		Si aucun paramètre n'à été passé, une série de question concernant le matériel et la personnalisation du système seront posées.
+#		AVERTISSEMENT : Certaines questions ne sont pas posées ! L'utilisateur devra lui même ajouter ses options avant l'execution du script
+#		Les options non demandées :
+#				-> Le cache des paquets  		: Option  "-c /path/to/cache/packages"
+#				-> Les options pour pactrap 		: Options "-M -G -d -i" ( A vous de voir ce à quoi elles sont destinée ! "man pacstrap" )
+#				-> installation de GRUB 		: Option  "-l /dev/DISK"
+#				-> mode interactif			: Option  "-i" Comme pour pacstrap, vous pouvez avoir le contrôle sur les paquet que vous installez...
+#				-> Voir les logiciels plus bas
+#
+#	-> pacinstall.sh
+#		Celui ci se sert simplement de pacman pour installer les paquets, puis effectue les modifications sur le système
+#			A savoir :
+#				-> Fichier hostname			( echo "NEW_HOSTNAME" >> /path/to/new_root/etc/hostname )
+#				-> Fichier hosts				( /path/to/new_root/etc/hostname  )
+#				-> génération fstab UUID		( genfstab -U /path/to/new_root >> /path/to/new_root/etc/fstab )
+#				-> codage clavier console 		( /etc/vconsole )
+#				-> codage clavier X11 			( /etc/X11/xorg.conf.d/00-keyboard )
+#				-> langue système				( /etc/locale.conf )
+#				-> generation locales			( /etc/locale.gen && locale-gen)
+#				-> TimeZone					( ln -s /usr/share/zoneinfo/TIMEZONE /etc/localtime )
+#				-> Ajout utilisateur			( useradd -m -g users -G wheel -s /bin/bash USER )
+#				-> Root et user passwords		( chpasswd )
+#				-> activation des services systemd 	( systemctl enable SYSTEMD_SERVICES )
+#				-> GRUB ( Si dans les options )	( grub-install --recheck DISK && grub-mkconfig -o /boot/grub/grub.cfg )
+
+
+#
+# Voici les éléments installé de base
+# Le dernier noyaux linux de la distribution
+# Un pilote de carte graphique, ou tous avec l'option "-g all" pour faire une clé live. Si aucun pilote, aucun environnement de bureau ne sera installé
+# Un gestionnaire de connexion ( NetworkManager ou dhcpcd ( sur toute les interfaces ou seulement celle désirée...) ou nfsroot )
+# Un environnement de bureau (DE) ( au choix parmis ( Plasma/Kde, Gnome, XFCE, mate, LXDE, LXQT) )
+# Un display manager qui va de paire avec le DE ( Désolé pour ceux qui ne veulent pas de display manager... )
+#	-> sddm pour plasma/KDE et LXQT,
+#	-> gdm pour GNOME
+#	-> lightdm pour XFCE, mate
+#     -> lxdm pour LXDE 
+
+
+# Ces logiciels sont également installé d'office peu importe le DE...
+#	Un navigateur WEB 	: firefox ( avec le package lang qui va bien... Peut poser problème si vous en voulez un autre... ) 
+#	Un lecteur video 		: vlc
+#	Outils d'archivage	: zip unzip unrar
+# 	serveur SSH			: openssh
+# 	Client NFS			: nfs-utils
+# 	JAVA				: icedtea-web jre7-openjdk
+# 	Outils disques WIN !	: extra/ntfs-3g core/dosfstools
+# 	Flash Player !		: flashplugin
+#	Codecs sons !		: gstreamer0.10-bad-plugins gstreamer0.10-base-plugins gstreamer0.10-ffmpeg gstreamer0.10-good-plugins gstreamer0.10-ugly-plugins
+
+# Vous pouvez modifiez la liste des logiciels à installer dans files/de/common.conf 
+
+# De même que pour files/de/common.conf, les fichiers (DE).conf dans files/de/ sont égalements personnalisables...
+# N'utilisant dans la plupart des cas que plasma/KDE ou xfce, j'ai détaillé les paquets pour ne pas avoir de question de la part de pacman lors de l'installation du DE ( Vous aurez le choix des paquets à installé pour GNOME par exemple... ).
+# Il y a également quelques logiciels particuliers dans ces fichiers tel que clementine pour plasma/KDE
+
+# Il intègre également quelques options de personnalisation/optimisations avec le fichier files/custom :
+# 	AMELIORATIONS CONSOLE
+#			-> COLOR BASH PROMPT
+#			-> PGUP et PGDOWN becomes history search for terminal
+#			
+# 	GRUB 		-> Background aléatoire
+# 			-> PXE Entry
+#			-> Shutdown et Reboot Entry
+#
+# 	LIGHTDM  	-> Background aléatoire pour lightdm
+#
+
+# On peut passer certaines options à la ligne de commande pour installer des logiciels particuliers de manière automatique
+# 	CUPS					: option "-p" # cups
+# 	CUPS + Hplip 			: option "-H" # cups hplip
+# 	Librairie bluetooth		: option "-b" # bluez bluez-utils
+# Les services systemd bluetooth et/ou cups seront activé automatiquement...
+
+# Ou encore
+# 	Gestion touchpad (laptop)	: option "-s" # xf86-input-synaptics, powerdevil*
+# 	Thunderbird 			: option "-T" # thunderbird + thunderbird-i18n-LALANGUE
+# 	Libreoffice				: option "-L" # libreoffice-still + libreoffice-still-LALANGUE
+
+
+# Vous pouvez ajouter des commandes à la fin du fichier files/custom_user pour personnaliser l'installation
+
+#
+# Distributions supportées ( je n'ai récemment essayé que sur LinuxMint mais ca devrait le faire avec les autres.. )
+# Debian, Linux Mint, Ubuntu
+# AVERTISSEMENT : Il y a un probleme avec ces distributions, ca mange trop de RAM...
+# du au montage de tmpfs la ou il ne faut pas sûrement ! 
+# Si vous recommencez suite à une erreur, il ne faut pas lire le fichier créer lors de l'execution de launchinstall
+
+# Le cas de Manjaro :
+# Actuellement le script ne cherche pas a savoir si pacman est déjà installé, donc lors d'une installation depuis Manjaro, la procédure sera la même que sur debian ou ses dérivées...
+# Bah en fait c'est bon pour Manjaro, ca marche au poil !!!
+
+* powerdevil ( gestion de l'energie sous kde ) necessite aussi les paquet bluez...

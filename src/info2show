@@ -1,0 +1,10 @@
+#!/bin/bash
+
+# BEGIN Minimal msgs info
+msg_info() { local txt saut="\n";[[ "$1" == "-n" ]] && saut="" && shift; txt="$1"; shift; printf " $(date +%H:%M:%S) [ INFO  ] $txt$saut" "$@"; }
+msg_error() { local txt=$1; shift; printf " $(date +%H:%M:%S) [ ERROR ] $txt\n" "$@"; }
+die() {
+	msg_error "$@" 
+	exit 1
+}
+# END

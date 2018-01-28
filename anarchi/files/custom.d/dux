@@ -1,0 +1,87 @@
+
+# This script is executed at the end of the installation
+# Don't forget you are chrooted in the fresh install while it run
+# Put your stuff at the end of this file..
+# 
+#
+# Some variables you can use :
+# 	Username : NAME_USER=
+# 	Les services systemd SYSTD_SOFT=
+# 	Le disque sur lequel grub sera installé GRUB_DISK=
+# 	L'interface reseau choisie NFSROOT=
+# 	L'environnement de bureau DE=
+#	L'architecture de la distribution ARCH=
+# 	Le display manager DisplayManager=
+# 	Le codage clavier X11 $X11_KEYMAP=
+
+# BEGIN DUX CONFIG
+if [ "$NAME_USER" == "dux" ]; then
+	echo "==> Creation de la session $NAME_USER" 
+	cp $DIR_SRV/scripts/$NAME_USER/dux.service /usr/lib/systemd/system/
+	
+	sed -i "s/init_dux_light.sh dm/init_dux_light.sh dm ${dm[$DE]} $DE/" /usr/lib/systemd/system/dux.service
+	systemctl disable ${dm[$DE]}
+	systemctl enable dux
+	[[ $( getent passwd $NAME_USER | grep 1002 | wc -l ) == 0 ]] && usermod -u 1002 $NAME_USER
+	
+# 	case $DE in
+# # 		plasma)
+# # 			$pacman -S kdeconnect
+# # 			sddm --example-config > /etc/sddm.conf
+# # 			sed -i "s/maui/breeze/" /etc/sddm.conf
+# # 		;;
+# 		mate)
+# 
+# 		
+# 
+# 
+# 			su $NAME_USER -c "yaourt --arch $ARCH_PACKAGES -Sy mate-menu"
+# 		;;
+# 	esac
+	
+
+	if [ -f /etc/grub.d/40_custom ]; then
+# 		su $NAME_USER -c "rm -R /home/$NAME_USER/.*"
+# 		mount 192.168.1.5:/users/lix/DIVERS/.dux /home/$NAME_USER/
+		echo -n "==> Recherche d'une image..." 
+		DIR_IMGS=$DIR_SRV/BACKUP/.$NAME_USER/Images/
+		# BEGIN Chrismas config !!!
+		[ $( date +%m ) -eq 12 ] && [ $( date +%d ) -gt 8 ] && DIR_IMGS=$DIR_SRV/BACKUP/.$NAME_USER/Images/Christmas
+		[ $( date +%m ) -eq 1 ] && [ $( date +%d ) -lt 15 ] && DIR_IMGS=$DIR_SRV/BACKUP/.$NAME_USER/Images/Christmas
+		# END Chrismas config !!!
+
+		while [[ "$( echo "${IMG_AP_HOME,,}" | sed "s/.*\.//")" != "jpg"  && "$( echo "${IMG_AP_HOME,,}" | sed "s/.*\.//")" != "png" ]]; do
+# 		while [ "$IMG_AP_HOME" == "" ]; do
+			dir="$(su $NAME_USER -c "find \"$DIR_IMGS\" -follow -type d -name land* | shuf | head -n 1" )"
+			IMG_AP_HOME=$(su $NAME_USER -c "find \"$dir\" -maxdepth 1 -follow -type f | shuf | head -n 1" )
+		done
+		echo "ok" 
+		EXT_BG_NAME=$( echo "$IMG_AP_HOME" | sed "s/.*\.//")
+		BG_NAME="bg.$EXT_BG_NAME"
+		su $NAME_USER -c "cp \"$IMG_AP_HOME\" \"/tmp/$BG_NAME\""
+		cp "/tmp/$BG_NAME" /boot/
+		sed -i "s/.*GRUB_BACKGROUND=.*/GRUB_BACKGROUND=\"\/boot\/$BG_NAME\"/" /etc/default/grub
+		sed -i "s/GRUB_GFXMODE=.*/GRUB_GFXMODE=0x14c/" /etc/default/grub
+		# PXE Entry
+		echo "menuentry \"Calux live - MATE (iPXE)\" {
+    linux /dux/vmlinuz add_efi_memmap ip=:::::eth0:dhcp nfsroot=192.168.1.5:/nfs/pxe/cadux boot=casper quiet splash netboot=nfs
+    initrd /dux/initrd.gz
+}
+
+" >> /etc/grub.d/40_custom
+		mkdir /boot/dux
+		cp $DIR_SRV/pxe/cadux/casper/{initrd.gz,vmlinuz} /boot/dux/
+# 		umount /home/$NAME_USER
+# 		mountpoint -q $DIR_SRV && umount $DIR_SRV
+# 		df && sleep 5
+# 		grub-mkconfig -o /boot/grub/grub.cfg
+	fi
+
+else
+	cp $DIR_SRV/scripts/dux/dux.service /etc/systemd/system/
+	sed -i "s/init_dux_light.sh dm/init_dux_light.sh dm ${dm[$DE]} $DE/" /etc/systemd/system/dux.service
+	[ "${dm[$DE]}" == "lightdm" ] && sed -i "s/BusName=org.freedesktop.DisplayManager/#BusName=org.freedesktop.DisplayManager/" /etc/systemd/system/dux.service
+# FOR LXDE
+fi
+# END 
+

@@ -1,0 +1,145 @@
+
+# # This script is executed at the end of the installation
+# # Don't forget you are "chrooted" in the fresh install while it run
+# # Put your stuff at the end of this file..
+# # Some feature are commented...
+# #
+# # Some variables you can use :
+# #	L'architecture de la distribution ARCH=
+# # 	Le codage clavier X11 $X11_KEYMAP=
+# # 	L'environnement de bureau DE=
+# # 	Les services systemd SYSTD_SOFT=
+# # 	Le disque sur lequel grub sera installé GRUB_DISK=
+# # 	L'interface reseau choisie NFSROOT=
+# # 	Le display manager DisplayManager=
+# # 	Username : NAME_USER=
+
+# BEGIN USER CONFIG
+	
+# # BEGIN Ajout utilisateur utilisateur et création du mot de passe
+# useradd -m -g users -G wheel -s /bin/bash \$NAME_USER
+# #...sans creer de dossier
+# useradd -g users -G wheel -s /bin/bash \$NAME_USER
+# #...sans creer de dossier et avec uid 1002
+# useradd -u 1002 -g users -G wheel -s /bin/bash \$NAME_USER
+# # Et on créé le dossier...
+# mkdir /home/\$NAME_USER && chown \$NAME_USER:users /home/\$NAME_USER
+# # passwords...
+# echo \"Mot de passe utilisateur \$NAME_USER ?\"
+# passwd \$NAME_USER
+# # END users config
+
+# # BEGIN GUI_EDITOR for edit pkgbuild in yaourt 
+# # ${dm_editor} is a tab which contains the editor list associated with the DE
+# declare -A dm_editor=(
+# 	[e_plasma]="kate"
+# 	[e_kde4]="kate"
+# 	[e_gnome]="gedit"
+# 	[e_mate]="pluma"
+# 	[e_lxde]="leafpad"
+# 	[e_xfce]="mousepad"
+# 	[e_lxqt]="leafpad"
+# )
+# GUI_EDITOR="${dm_editor[e_$DE]}"
+# sed -i "s/export VISUAL=.*/export VISUAL=\"\$(if [[ -n \$DISPLAY ]]; then echo '$GUI_EDITOR'; else echo 'nano'; fi)\"/" /home/*/.bashrc
+# # END
+
+
+# # BEGIN fstab perso & mount new entry...
+# # I use this directory to mount my NFS server...
+# DIR_SRV=/path/to/srv/dir
+# # ...with this IP...
+# IP_SRV="192.168.1.5"
+# # Later, I'll copy my NAME_USER config from DIR_USR_CONF on my server...
+# DIR_USR_CONF=$DIR_SRV/users
+# # Write in fstab
+# echo "# $IP_SRV:/ on $DIR_SRV
+# $IP_SRV:/                       $DIR_SRV            nfs    x-systemd.automount,x-systemd.device-timeout=1s   0       0" >> /etc/fstab
+# # # USR DIR Bind from srv on fstab
+# # echo "$DIR_USR_CONF                       /home            none    bind   0       0" >> /etc/fstab
+# echo "Create directory $DIR_SRV"
+# mkdir -p $DIR_SRV
+# echo "Wait while mounting $DIR_SRV" 
+# CAUTION don't forget to uncomment "umount ..." at the end of file !
+# mount $DIR_SRV
+# # END fstab
+
+
+# BEGIN  install packages in files/de/yaourt.conf via AUR. 
+# files/de/yaourt.conf is empty by default except when we install lxqt desktop ( qterminal is in AUR repository )
+if [ "$LIST_YAOURT" != "" ]; then
+	rep=
+	while [[ "$rep" == "" ]]; do
+		echo -en "\033[01;37m  -> Install AUR packages Y|O/n ?\033[00m ( $LIST_YAOURT ) "
+		read -n 1 rep
+		case "$rep" in 
+			o|O|y|Y)
+				echo "$LIST_YAOURT install" 
+				su $NAME_USER -c "yaourt --arch $ARCH -Sy --noconfirm $LIST_YAOURT"
+				break				
+			;;
+			n|N)
+				break
+			;;
+			*) rep= ;;
+		
+		esac
+	done
+fi
+# # END Yaourt...
+
+# # BEGIN fill .bash_history with usefull command for starting
+# echo "
+# systemctl stop $DisplayManager
+# systemctl start $DisplayManager
+# systemctl poweroff
+# systemctl reboot
+# ip addr
+# fdisk -l
+# df -h
+# du -h -d 1
+# systemctl status $NFSROOT
+# su - $NAME_USER
+# modprobe -a vboxdrv vboxnetadp vboxnetflt vboxpci
+# rmdir /var/cache/pacman/pkg/ && ln -s $DIR_SRV/packages/$ARCH/pkg/ /var/cache/pacman/
+# pacman -Syu
+# journalctl -f -n 50
+# 
+# " >> /root/.bash_history
+# # END .bash_history
+
+# # BEGIN X11 KEYBOARD CONFIG ( Ctrl + Alt + backspace kill xserver)
+# # It's for a french keyboard ! Remove latin9 !!!
+# echo -e "Section \"InputClass\"\n\tIdentifier \"system-keyboard\"\n\tMatchIsKeyboard \"on\"\n\tOption \"XkbLayout\" \"${X11_KEYMAP}\"\n\tOption \"XkbModel\" \"pc105\"\n\tOption \"XkbVariant\" \"latin9\"\n\tOption \"XkbOptions\" \"terminate:ctrl_alt_bksp\"\n EndSection" > /etc/X11/xorg.conf.d/00-keyboard.conf
+# # END
+
+# # BEGIN $NAME_USER CONFIG
+# # change USER_NAME, and mount your configs dirs in DIR_SRV (see below)
+# if [ "$NAME_USER" == "USER_NAME" ]; then
+# 	# I link all my directories & create a .config to copy my owns confs files for the desktop environnement
+# 	su $NAME_USER -c "ln -s $DIR_USR_CONF/$NAME_USER/* /home/$NAME_USER/
+# 	mkdir /home/$NAME_USER/.config"
+# 	case $DE in
+# #		Config plasma and I install kdeconnect for plasma
+# 		plasma)
+# 			su $NAME_USER -c "mkdir -p /home/$NAME_USER/.local/share
+# 			cp -R $DIR_USR_CONF/$NAME_USER/.config/{autostart-scripts,baloofilerc,dconf,gtkrc,gtkrc-2.0,kconf_updaterc,kdebugrc,kded_device_automounterrc,kdeglobals,kglobalshortcutsrc,khotkeysrc,konsolerc,kscreenlockerrc,ktimezonedrc,kwinrc,plasma-localerc,plasma-org.kde.plasma.desktop-appletsrc,plasmashellrc,powerdevilrc,powermanagementprofilesrc,session,startupconfig,startupconfigfiles,startupconfigkeys,dolphinrc,katerc,kateschemarc,katesyntaxhighlightingrc} /home/$NAME_USER/.config/
+# 			cp -R $DIR_USR_CONF/$NAME_USER/.local/share/{konsole,kxmlgui5,user-places.xbel} /home/$NAME_USER/.local/share/
+# 			"
+# 			pacman -S --noconfirm kdeconnect
+# 		;;
+# 		xfce)
+# 			su $NAME_USER -c "cp -R $DIR_USR_CONF/$NAME_USER/.config/xfce4/ /home/$NAME_USER/.config/"
+# 		;;
+# 		mate)
+# 			su $NAME_USER -c "cp -R $DIR_USR_CONF/$NAME_USER/.config/{dconf,caja} /home/$NAME_USER/.config/"
+# 		;;
+# 		lxqt)
+# 			su $NAME_USER -c "cp -R $DIR_USR_CONF/$NAME_USER/.config/{gconf,lxqt,qterminal.org,pcmanfm-qt} /home/$NAME_USER/.config/"
+# 		;;
+# 	esac
+# fi
+# # END
+
+# sleep 2
+# umount $DIR_SRV

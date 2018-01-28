@@ -1,0 +1,2 @@
+Il y a de celà trois mois j'étais à réinstaller une arch sur machine à problèmes et en copiant collant les commandes de mon fichier perso, je me suis dit, pourquoi ne pas tout mettre dans un  script?
+Voila comment a débuté le développement de ce script qui permet donc d'installer une arch pas complète mais utilisable avec un environnement de bureau et les applications qui vont avec ce dernier.

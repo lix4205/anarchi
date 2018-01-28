@@ -1,0 +1,70 @@
+#!/bin/bash
+
+netman_check() {
+	check_command -q "NetworkManager" && systemctl is-enabled NetworkManager --quiet && systemctl disable NetworkManager && caution "NetworkManager a été désactivé..."
+	return $?
+}
+
+netman_stop() {
+	check_command -q "NetworkManager" && systemctl is-active NetworkManager --quiet && rid_continue "Couper NetworkManager ?" && systemctl stop NetworkManager
+	return $?
+}
+
+list_if() {
+	IFACES=""
+	TFACES=()
+# 	valid_iface=()
+# 	The command "lspci | grep Ethernet | awk '{print $1}' | sed "s/0\(.*\):0/enp\1s/" | sed "s/\..*//"" list all network interfaces and transform them into udev terminology
+# 	for i in $(ip addr | egrep '^[^ ]' |  awk '{print $2}' | sed "s/://g"  ); do
+
+# Premiere partie
+# 	echo "enp$((16#$(lspci | grep Ethernet | awk '{print $1}' | sed "s/\(.*\):.*/\1/" | sed "s/\..*//" ) ))s"
+	[[ "$1" != "wifi" ]] && 	
+		for i in $( lspci | grep Ethernet | awk '{print $1}' ); do
+			iface=$(echo "enp$((16#$(echo $i | sed "s/\(.*\):.*/\1/" | sed "s/\..*//" ) ))s$((16#$(echo $i | sed "s/.*:\(.*\)\..*/\1/" | sed "s/\..*//" ) ))")
+			# j le nombre de connexion...
+			j=$((j+1))
+			valid_iface[$iface]="$j"
+			valid_iface[$j]="dhcpcd@$iface"
+			TFACES=( "${TFACES[@]}" "dhcpcd@${iface} $( ip addr | grep $i -A 2 | grep "inet " | awk '{print $2}' | sed "s/\(.*\)/( \1 )/" )")
+			IFACES="${IFACES}\t$j) dhcpcd@${iface} $( ip addr | grep $i -A 2 | grep "inet " | awk '{print $2}' | sed "s/\(.*\)/( \1 )/" )\n"
+		done
+	[[ "$1" != "eth" ]] && 
+		for i in $( ip addr | grep "^[0-9]: w" | sed "s/^.*: \(.*\):.*/\1/g" ); do
+			if [[ "$i" != "lo" ]]; then
+				iface=$i
+				j=$((j+1))
+				valid_iface[$iface]="$j"
+				valid_iface[$j]="wifi@$iface"
+				TFACES=( "${TFACES[@]}" "WiFi: ${iface} $( ip addr | grep $i -A 2 | grep "inet " | awk '{print $2}' | sed "s/\(.*\)/( \1 )/" )")
+				IFACES="${IFACES}\t$j) WiFi: ${iface} $( ip addr | grep $i -A 2 | grep "inet " | awk '{print $2}' | sed "s/\(.*\)/( \1 )/" )\n"
+			fi
+		done
+	[[  -z $IFACES ]] && return 1
+	return 0
+} 
+
+ask_if() {
+	local if2return;
+# 	printf "$IFACES" >&2
+	msg_nn "$(rid_menu -q "Sélection d'une interface." "${TFACES[@]}")" 
+# 	msg_nn "\r" "Choisissez l'interface à utiliser. Type '%s' to quit" "q"
+	while [[ "$if2return" == "" ]]; do
+		if2return="$( rid "Choisissez l'interface à utiliser. Type '%s' to quit" "q" )"
+		[[ "$if2return" == "q" ]] && printf "\n" && return 1
+		if [[ "$if2return" != "" && ! -z ${valid_iface[$if2return]} ]]; then
+			if2return=${valid_iface[$if2return]}
+			if2return=${if2return//wifi@/}
+			if2return=${if2return//dhcpcd@/}
+			msg_n "32" "32" "L'interface \"%s\" a ete choisi !" "$if2return"
+		else
+			 [[ "$if2return" != "" ]] && choix2error "L'interface \"%s\" n'existe pas !" "$if2return"
+			if2return=""
+		fi
+	done
+	printf $if2return
+	return 0
+
+}
+
+declare -A valid_iface

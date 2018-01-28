@@ -1,0 +1,1057 @@
+#!/bin/bash
+   
+DIR_SCRIPTS="$( dirname $0 )" 
+# && [[ "$DIR_SCRIPTS" == "." ]] && DIR_SCRIPTS=$( pwd )
+WORK_DIR="/tmp/install"
+NAME_ARCHIVE="arch-install"
+FILE2SOURCE="/tmp/anarchi-"
+NAME_SCRIPT="launchInstall.sh"
+NAME_SCRIPT2CALL="pacinstall.sh"
+DEFAULT_CACHE_PKG="/var/cache/pacman/pkg"
+PREFIX_PACMAN="$WORK_DIR/root."
+ROOT_DIR_BOOTSTRAP="/install.arch"
+LOG_EXE="/tmp/anarchi.log"
+FILE_COMMANDS="/tmp/anarchi_command"
+# mkdir install directory
+
+# force script to running on $WORK_DIR
+# force files copy to install directory
+if [[ "$DIR_SCRIPTS" != "$WORK_DIR" ]]; then
+	mkdir -p $WORK_DIR 
+	cp -RfL "$DIR_SCRIPTS"/{$NAME_SCRIPT2CALL,$NAME_SCRIPT,files} $WORK_DIR || echo "==> ERROR: Copy failed !"
+	[[ ! -e $WORK_DIR/files/anarchi ]] && ln -fs  "$DIR_SCRIPTS" $WORK_DIR/files/anarchi
+	cp -R "$DIR_SCRIPTS/../tools" $WORK_DIR/files/
+	cp -R "$DIR_SCRIPTS/../extras" $WORK_DIR/files/
+# 	cp -a "$DIR_SCRIPTS/../confs" $WORK_DIR/files/
+# 	cp -Rf "$DIR_SCRIPTS/../imgs" $WORK_DIR/files/
+# 	( cd "$WORK_DIR/files"; rm imgs bgs; ln -sf extras/imgs . && ln -sf imgs bgs )
+# 	cp -RfL $DIR_SCRIPTS/../services files/services
+	printf "Copie dans $WORK_DIR\n"
+	$WORK_DIR/$NAME_SCRIPT "${@}"
+	exit $?
+fi
+cd $WORK_DIR
+
+# BEGIN FUNCTIONS
+usage() {
+  cat <<EOF
+usage: ${0##*/} [options] root [packages]
+
+  Options:
+    -C config      Use an alternate config file for pacman
+    -d             Allow installation to a non-mountpoint directory
+    -G             Avoid copying the host's pacman keyring to the target
+    -i             Avoid auto-confirmation of package selections
+    -M             Avoid copying the host's mirrorlist to the target
+    -a architecture                       Architecture du processeur (x64/i686)
+    -g graphic driver to install          Pilote carte graphique (intel,nvidia{-304,340},radeon,all)
+    -e desktop environnement              Environnement de bureau (plasma,xfce,lxde,gnome,mate,cinnamon,fluxbox,enlightenment)
+    -h hostname                           Nom de la machine
+    -u username                           Login utilisateur
+    -n [ nm, dhcpcd@<< network_interface >> ]       Utilisation de NetworkManager ou dhcpcd (avec l'interface NETWORK_INTERFACE)
+    -p                                 	Gestion imprimante ( cups )
+    -H		                        Gestion imprimante HP ( cups + hplip )
+    -b		                        Gestion du bluetooth ( bluez bluez-utils )
+    -l /dev/sdX                           Installation de grub sur le péripherique /dev/sdX.
+    -L  		 	                  Installation de libreoffice
+    -T		                        Installation de thunderbird
+    -c CACHE_PAQUET           		Utilisation des paquets contenu dans le dossier CACHE_PAQUET
+    -t             Test mode
+    -q             Quiet mode
+
+    -h             Print this help message
+
+pacinstall installs packages named in files/de/*.conf to the specified new root directory.
+Then generate fstab, add the user,create passwords, install grub if specified,
+enable systemd services like the display manager
+And files/custom_user is executed as a personal script 
+
+EOF
+}
+
+# BEGIN not in arch
+remove_boostrap () {
+	kill $PID_WGET 2> /dev/null && rm $FILE_BOOTSTRAP
+	[[ ! -z "$FIN" ]] && [[ $FIN -eq 0 ]] && rm $FILE_BOOTSTRAP
+# 	[[]] &&rm $FILE_BOOTSTRAP
+	echo -e "\n"
+}
+
+download_img () {
+	UNAMEM=$ARCH
+	[[ "$ARCH" == "x64" ]] && UNAMEM="x86_64"
+	FILE_BOOTSTRAP="$WORK_DIR/$NAME_ARCHIVE-$UNAMEM.tar.gz"
+	ROOT_BOOTSTRAP="$WORK_DIR/root.$UNAMEM"
+	
+# 	LATEST="2015.12.01"
+	LATEST="$( date +%Y ).$( date +%m ).01"	
+	URL_BOOTSTRAP="http://mirrors.kernel.org/archlinux/iso/latest/archlinux-bootstrap-$LATEST-$UNAMEM.tar.gz"
+	MIRROR="https:\/\/fooo.biz\/archlinux"
+	if [[ ! -e "$ROOT_BOOTSTRAP" ]]; then
+		msg_n "$_launch_dl"
+		if [[ ! -f "$FILE_BOOTSTRAP" ]]; then
+			WGET="curl $URL_BOOTSTRAP -o $FILE_BOOTSTRAP"
+			check_command "curl" || {
+				check_command "wget" && {
+						WGET="wget $URL_BOOTSTRAP -O $FILE_BOOTSTRAP"
+				} || {
+						die "$_wget_missing"
+				}
+			}
+			! [[ -e "$WORK_DIR" ]] && mkdir $WORK_DIR
+			cd "$WORK_DIR"
+			msg_nn2 "$_test_net"
+			ping -q -c 2 "www.archlinux.org" >/dev/null 2>&1
+			[[ $? -eq 0 ]] && msg_nn_end " $_ok" || msg_nn_end "$_fail"
+
+			# Downloading in background until user has information...
+			$WGET > /tmp/$NAME_ARCHIVE-$UNAMEM.tar.gz.log 2>&1 &
+			PID_WGET=$!
+			trap "remove_boostrap" EXIT
+			
+		fi
+	fi
+	
+}
+
+notinarch_function() {
+	WORK_DIR_BOOTSTRAP="$ROOT_BOOTSTRAP$WORK_DIR"
+	[[ ! -e "$WORK_DIR_BOOTSTRAP" ]] && mkdir $WORK_DIR_BOOTSTRAP
+	[[ ! -e "$ROOT_BOOTSTRAP$ROOT_DIR_BOOTSTRAP" ]] && mkdir $ROOT_BOOTSTRAP$ROOT_DIR_BOOTSTRAP
+	
+	msg_nn "$_prepare_chroot..."
+	cp -RfL $DIR_SCRIPTS/{$NAME_SCRIPT2CALL,files} $WORK_DIR_BOOTSTRAP/ || die "$_install_copie"
+	# Décommenter un seul serveur
+# 	sed -i "s/#Server = $MIRROR/Server = $MIRROR/g" root.$UNAMEM/etc/pacman.d/mirrorlist
+	# Décommenter tout les serveurs
+	sed -i "s/^#Server/Server/g" root.$UNAMEM/etc/pacman.d/mirrorlist
+
+# 	echo "./$NAME_SCRIPT2CALL -x $( echo $LA_LOCALE | sed "s/\..*//" ) -K $X11_KEYMAP -k $CONSOLEKEYMAP -z \"$TIMEZONE\" -a $ARCH -g $DRV_VID $( [[ "$DRV_VID" != "0" ]] && echo " -e $DE" ) -n $CONF_NET -h $NAME_MACHINE -u $USER_NAME $( [[ "$GRUB_INSTALL" != "" ]] && echo "-l $GRUB_INSTALL" ) $( [[ "$CACHE_PAQUET" != "" ]] && echo "-c $DEFAULT_CACHE_PKG" || echo "-c $ROOT_DIR_BOOTSTRAP$DEFAULT_CACHE_PKG" ) -C $ROOT_DIR_BOOTSTRAP$WORK_DIR/files/pacman.conf.$ARCH $SHOW_COMMANDE $ROOT_DIR_BOOTSTRAP $OTHER_PACKAGES" > "root.$UNAMEM/root/.bash_history"
+	
+	COMMAND4ARCH="$WORK_DIR/$NAME_SCRIPT2CALL -x $( echo $LA_LOCALE | sed "s/\..*//" ) -K $X11_KEYMAP -k $CONSOLEKEYMAP -z \"$TIMEZONE\" -a $ARCH -g $DRV_VID $( [[ "$DRV_VID" != "0" ]] && echo " -e $DE" ) -D ${envir[syst_$DE]} -n $CONF_NET -h $NAME_MACHINE -u $USER_NAME $( [[ "$GRUB_INSTALL" != "" ]] && echo "-l $GRUB_INSTALL" ) $( [[ "$CACHE_PAQUET" != "" ]] && echo "-c $DEFAULT_CACHE_PKG" || echo "-c $ROOT_DIR_BOOTSTRAP$DEFAULT_CACHE_PKG" ) -C $ROOT_DIR_BOOTSTRAP$WORK_DIR/files/pacman.conf.$ARCH $QUIET$TESTING$PACSTRAP_OPTIONS $ROOT_DIR_BOOTSTRAP $OTHER_PACKAGES"
+	COMMAND2LAUNCH="source $WORK_DIR_BOOTSTRAP/files/linux-part.sh $PREFIX_PACMAN $RACINE $NAME_MACHINE $LA_LOCALE $DE" 
+	msg_nn_end "$_ok"
+}
+
+# Attend la fin du téléchargement de l'image minimal d'Archlinux puis décompresse
+# Recupere la sortie de curl ou wget et la renvoie vers l'utilisateur
+wait_arch_define() {
+	if [[ ! -e "root.$UNAMEM" ]]; then
+		cd "$WORK_DIR"
+		if [[ ! -z "$PID_WGET" ]]; then
+			msg_nn "$_downloading..."
+			loading &
+			PID_LOAD=$! && disown
+			while kill -0 $PID_WGET 2> /dev/null; do
+				sleep 3
+				clear_line
+				if [[ -e /proc/$PID_WGET/fd/2 ]]; then
+					if tail -n 2 /tmp/$NAME_ARCHIVE-$UNAMEM.tar.gz.log | grep -q "%"; then
+						PERCENT="$( tail /tmp/$NAME_ARCHIVE-$UNAMEM.tar.gz.log | grep "%" | tail -n 1 | sed "s/.* \(.*\%\)/\1/" )"
+						SPEED=""
+					else
+						echo "" > /tmp/$NAME_ARCHIVE-$UNAMEM.tar.gz.log
+						PERCENT="$( tail -n 1 /proc/$PID_WGET/fd/2 | awk '{print $4}' )%"
+						SPEED=" - $( tail -n 1 /proc/$PID_WGET/fd/2 | awk '{print $13}') "
+					fi
+					msg_nn2 "\r"  "$_downloading...%s%s" "$PERCENT" "$SPEED "
+				else
+					msg_n "32" "32" "$_downloading...ok"
+				fi
+			done
+			kill $PID_LOAD && printf "\b"
+		fi
+		if [[ -e "$FILE_BOOTSTRAP" && ! -e "root.$UNAMEM"  ]]; then
+			loading beg="$_archive_extract" end="$_archive_extract$ok" tar xf $FILE_BOOTSTRAP
+	#		tar xvf arch-install-$UNAMEM.tar.gz # verbose mode
+			PID_WGET=$!
+		fi
+	fi
+}
+# END not in arch
+
+checkrequirements () {
+#	Arch base config
+#	On vérifie si on est sur Arch ou une distribution basée sur arch
+	msg_n "32" "32" "$_check_init"
+	
+	msg_nn2 "$_test_net"
+	ping -q -c 2 "www.archlinux.org" >/dev/null 2>&1
+	[[ $? -eq 0 ]] && msg_nn_end " $_ok" ||  { msg_nn_end "$_fail"; die "$_no_internet"; }
+	
+	check_command "command" || {
+		caution "$_command_not_found"
+		return 1 ;
+	}
+	check_command "pacman" && {
+		exist_install ${_needed_commands} || die "$_install_ais_failed" 				
+	} || {
+		caution "$_requirement_missing"			
+		rid_continue "$_bootstrap" && REQUIRE_PACMAN=1 || die "Pacman needed !"
+	}
+}
+
+define_arch () {
+	ARCH=$1
+	# For i686 processor... ask user to switch directly to i686 
+	[[ "$(uname -m)" == "i686" && "$ARCH" != "i686" ]] && rid_continue "$_processor_i686" && ARCH="i686" 
+	while [[ "$ARCH" == "" ]] || [[ "$ARCH" != "x64" && "$ARCH" != "i686" ]]; do
+# 		if [[ -z "$Architecture" ]]; then
+# 			i=1
+# 			while [[ $i -lt 3 ]] ; do
+# 				Architecture="$Architecture\t ${i}) ${valid_arch[${i}]}\n"
+# 				i=$((i+1))
+# 			done
+# 			msg_nn "$_arch"
+# 		else
+# 			error "$_valid_choice" "$OPT"
+# 		fi
+		msg_nn "$_arch"
+		echo -e "$( print_menu "${valid_arch[@]}" )"
+# exit
+
+# 		echo -e "${Architecture[@]}"
+		OPT=$(rid "$_choix_de" )	
+		if [[ "$OPT" != "" ]]; then
+			[[ ! -z ${valid_arch[$OPT]} ]] && ARCH=${valid_arch[$OPT]} || error "$_valid_choice" "$OPT"
+		fi
+	done
+	if  [[ "$(uname -m)" == "i686" && "$ARCH" == "x64" ]]; then 
+		die "$_impossible"
+	fi
+
+	msg_n "32" "32" "$_arch_selected" "$ARCH"
+	if (( $REQUIRE_PACMAN )); then
+		UNAMEM=$ARCH
+		[[ "$ARCH" == "x64" ]] && UNAMEM="x86_64"
+		PREFIX_PACMAN+=$UNAMEM
+		download_img
+	fi
+}
+
+conf_net () {
+	local j=0
+	CONF_NET="$1"
+	list_if
+# 	echo "$(msg_info "He") --> ${j} ${valid_iface[$j]}" >> /tmp/tmp.log
+	valid_iface[0]="none"
+	valid_iface[none]="0"
+	valid_iface[$((j+1))]="nm"
+	valid_iface[nm]=$((j+1))
+	valid_iface[$((j+2))]="connman"
+	valid_iface[connman]=$((j+2))
+	valid_iface[$((j+3))]="nfsroot"
+	valid_iface[nfsroot]=$((j+3))
+	valid_iface[$((j+4))]="dhcpcd"
+	valid_iface[dhcpcd]=$((j+4))
+	
+	TFACES=( "${TFACES[@]}" "$_net_nm" "Connman" "$_net_nfsroot" "$_net_dhcp" )
+
+# 	IFACES="${IFACES}\t$((j+1))) $_net_nm"
+# 	IFACES="${IFACES}\n\t$((j+2))) Connman "
+# 	IFACES="${IFACES}\n\t$((j+3))) $_net_nfsroot "
+# 	IFACES="${IFACES}\n\t$((j+4))) $_net_dhcp"
+
+	
+	if [[ "$CONF_NET" == "" ]] || ( [[ -z ${valid_iface[${CONF_NET//dhcpcd@/}]} ]] &&  [[ -z ${valid_iface[${CONF_NET//wifi@/}]} ]] ); then
+# 	if [[ "$CONF_NET" == "" || ( ! ${valid_iface[${CONF_NET//dhcpcd@/}]} -gt 0 && ! ${valid_iface[${CONF_NET//wifi@/}]} -gt 0 ) ]]; then
+		msg_nn "$_net"
+		printf "$(print_menu "${TFACES[@]}")\n"
+			while [[ "$CONF_NET" == "" || ( -z ${valid_iface[${CONF_NET//dhcpcd@/}]} && -z ${valid_iface[${CONF_NET//wifi@/}]} ) ]]; do 
+				[[  "$NUM_CONF_NET" != "" ]] && [[ -z ${valid_iface[$NUM_CONF_NET]} ]] && choix2error "$_valid_choice" "$NUM_CONF_NET" && clear_line
+				NUM_CONF_NET=$(rid "33" "31" "$_choix_de" )
+# 				msg_n "%s--%s" "$CONF_NET" "${valid_iface[$NUM_CONF_NET]}"
+			[[ ! -z $NUM_CONF_NET ]] && [[ ! -z ${valid_iface[$NUM_CONF_NET]} ]] && CONF_NET="${valid_iface[$NUM_CONF_NET]}"
+			[[ "$NUM_CONF_NET" == "q" ]] && exit
+				[[ "$NUM_CONF_NET" == "" ]] && NUM_CONF_NET=$((j+4)) && break
+				[[ "$NUM_CONF_NET" == "$((j+3))" || "$NUM_CONF_NET" == "$((j+2))" || "$NUM_CONF_NET" == "$((j+1))" ]] && break
+			done
+# 			CONF_NET="${valid_iface[$NUM_CONF_NET]}"
+# 		while [[ "$DE" == "" ]] || [[ -z ${envir[$DE]} ]]; do
+# 			[[ "$OPT" != "" ]] && [[ -z ${envir[$OPT]} ]] && choix2error "$_valid_choice" "$OPT" && clear_line
+# 			OPT=$( rid "$_choix_de" )
+# 			[[ ! -z $OPT ]] && [[ ! -z ${envir[$OPT]} ]] && DE="${envir[$OPT]}"
+# 			[[ "$OPT" == "q" ]] && exit
+# 			[[ "$OPT" == "0" ]] && DE=0 && break 
+# 		done
+	fi
+
+# 	die "${valid_iface[${valid_iface[${CONF_NET//dhcpcd@/}]}]}"
+	
+# 	if [[ "$CONF_NET" == "" || ( ! ${valid_iface[${CONF_NET//dhcpcd@/}]} -gt 0 && ! ${valid_iface[${CONF_NET//wifi@/}]} -gt 0 ) ]]; then
+# 		msg_n "$_net"
+# 		CONF_NET=""
+# 		echo -e $IFACES
+# 		NUM_CONF_NET=$(rid_1 "$_choix_de")
+# 		if [[  "$NUM_CONF_NET" != "" ]]; then
+# 			while [[ "$CONF_NET" != "" || -z ${valid_iface[$NUM_CONF_NET]} ]]; do 
+# 				NUM_CONF_NET=$(rid_1 "33" "31" "Option \"%s\" not available ! -> $_choix_de" "$NUM_CONF_NET")
+# 				[[ "$NUM_CONF_NET" == "" ]] && NUM_CONF_NET=$((j+4)) && break
+# 				[[ "$NUM_CONF_NET" == "$((j+3))" || "$NUM_CONF_NET" == "$((j+2))" || "$NUM_CONF_NET" == "$((j+1))" ]] && break
+# 			done
+# 			CONF_NET=${valid_iface[$NUM_CONF_NET]}
+# 		else
+# 			CONF_NET="dhcpcd"
+# 		fi
+# 	fi
+	if echo "$CONF_NET" | grep -v nfsroot | grep -v dhcpcd | grep -v nm | grep -q wifi || echo "$CONF_NET" | grep -v nfsroot | grep -v dhcpcd | grep -v nm | grep -q wlp; then
+		WIFI_NETWORK=$( bash $DIR_SCRIPTS/files/extras/wifi-utils.sh ${CONF_NET//wifi@/} "get" ) || exit
+		[[ "$WIFI_NETWORK" == "" ]] && rid_continue "Voulez vous configurer le reseau ?" && conf_net "" 
+		[[ "$WIFI_NETWORK" != "" ]] && msg_n "32" "32" "$_net_selected" "${valid_iface[${valid_iface[${CONF_NET//wifi@/}]}]}"
+		CONF_NET="${valid_iface[${valid_iface[${CONF_NET//wifi@/}]}]}"
+	else
+# 		echo "$(msg_info "He") $j --> $CONF_NET::${CONF_NET//dhcpcd@/} - ${valid_iface[$NUM_CONF_NET]} : ${valid_iface[${CONF_NET//dhcpcd@/}]} == ${valid_iface[${valid_iface[${CONF_NET//dhcpcd@/}]}]}" >> /tmp/tmp.log
+		case "${valid_iface[${valid_iface[${CONF_NET//dhcpcd@/}]}]}" in
+			nm) msg_n "32" "32" "$_net_selected" "Network Manager" ;;
+			connman) msg_n "32" "32" "$_net_selected" "Connman" ;;
+			nfsroot) msg_n "32" "32" "$_net_selected" "$_net_nfsroot" ;;
+			dhcpcd) msg_n "32" "32" "$_net_selected" "Dhcpcd";;
+			none) rid_continue "Voulez vous configurer le reseau ?" && conf_net ""; msg_n "32" "32" "$_net_selected" "None";;
+			*) 
+				msg_n "32" "32" "$_net_selected" "${valid_iface[${valid_iface[${CONF_NET//dhcpcd@/}]}]}"
+				# On redefinit CONF_NET dans le cas ou l'utilisateur a saisi le nom de la carte ( type enp0s3 )...
+				CONF_NET="${valid_iface[${valid_iface[${CONF_NET//dhcpcd@/}]}]}"
+			;;
+		esac
+	fi
+}
+
+net_wifi () {
+	NET_CON=${1//*@/}
+	TYPE_CON=${1//@*/}
+	source /tmp/$NET_CON
+	[[ "$TYPE_CON" == "wpa_supplicant" ]] && SYSTD_TOENABLE+=" wpa_supplicant@$I_W dhcpcd@$I_W"
+}
+
+
+write_package() {
+	echo -en " $1" >> "$2"
+}
+
+graphic_setting () {
+	local rep=;
+	DRV_VID=$1
+# 	msg_n "${graphic_drv[$1]}---$1---${graphic_drv[$DRV_VID]}" 
+	if [[ "$DRV_VID" == "nv" ]];then
+		msg_nn "$_graphic ( %s )" "Nvidia"
+		# TODO C'est quoi ce test !
+		while [[ $rep == "" ]] && ( [[ $rep != "1" ]] || [[ $rep != "2" ]] || [[ $rep != "3" ]] || [[ $rep != "4" ]] ); do
+			echo -e "$( print_menu "${_graphic_nv[@]}" )"
+# 			echo -e "$_graphic_nv"
+			rep=$(rid "$_choix_de")
+			case "$rep" in
+			1) DRV_VID="nouveau" ;;
+			2) DRV_VID="nvidia" ;;
+			3) DRV_VID="nvidia-340xx" ;;
+			4) DRV_VID="nvidia-304xx" ;;
+			"") lspci | grep VGA --color ;rep=;;
+			*) rep=
+			esac
+		done
+	fi
+	if [[ "$DRV_VID" != "" ]] && (( ${graphic_drv[$DRV_VID]} )); then
+		:
+	else
+		while [[ "$rep" == "" ]]; do
+			[[ "$DRV_VID" == "" ]] && msg_nn "$_graphic"
+# 			echo -e "$_graphic_list"
+# 			choix_edit=$(rid "Quel fichier éditer ?$( print_menu "${_graphic_list[@]}")\n\tq) Exit\n\t->")
+# exit
+			echo -e "$( print_menu "${_graphic_list[@]}")"
+			rep=$(rid "$_choix_de" "$_0_select")
+			case "$rep" in
+				0) DRV_VID=0;;
+				1) DRV_VID="intel" ;;
+				2) graphic_setting "nv" "1";;
+				3) DRV_VID="radeon" ;;
+				4) DRV_VID="virtualbox" ;;
+				"") lspci | grep VGA --color; rep=;;
+				*) rep=
+			esac
+		done
+	fi
+# 	msg_n "${graphic_drv[$1]}---$1---${graphic_drv[$DRV_VID]}!!!!${graphic_drv[name_$DRV_VID]}" 
+	[[ ! -z ${graphic_drv[name_$DRV_VID]} ]] && DRV_VID="${graphic_drv[name_$DRV_VID]}" 
+# 	msg_n "${graphic_drv[${graphic_drv[name_$DRV_VID]}]}--->${graphic_drv[_${graphic_drv[name_$DRV_VID]}]}"
+	[[ "$DRV_VID" == "0" ]] && DE=0 && clear_line && caution "$_graphic_none"
+	[[ "$DRV_VID" != "0" ]] && [[ "$2" == "" ]] && msg_n "32" "32" "$_graphic_set" "${DRV_VID^}"
+
+}
+
+choose_dm() {
+	:
+	local choix_dm
+	i=0
+	msg_nn "$_select_dm"
+	for dm_dispo in ${DISPLAYMANAGER[@]}; do 
+		i=$((i+1));
+		envir[dm_$i]="$dm_dispo"
+# 		envir[$env_dispo]="$env_dispo"
+# 		msg_edit+="\n\t$i) $RACINE$f2e"
+	done
+	while [[ "$choix_dm" == "" ]] || [[ -z ${envir[dm_$choix_dm]} ]]; do
+		echo -e "$( print_menu "${DISPLAYMANAGER[@]}")"
+		choix_dm=$(rid "$_choix_de")
+	done
+	envir[syst_$DE]="${envir[dm_$choix_dm]}"
+	msg_n "32" "32" "$_selected" "${envir[dm_$choix_dm]}"
+	[[ ! -z "${envir[pack_${envir[dm_$choix_dm]}]}" ]] && envir[dm_$choix_dm]="${envir[pack_${envir[dm_$choix_dm]}]}"
+	envir[dm_$DE]="${envir[dm_$choix_dm]}"
+# 	die "ok %s ok %s" "$choix_dm" "${envir[dm_$choix_dm]}"
+}
+desktop_environnement () {
+	DE=$1
+	i=0
+	for env_dispo in ${ENVIRONNEMENT[@]}; do 
+		i=$((i+1));
+		envir[$i]="$env_dispo"
+		envir[$env_dispo]="$env_dispo"
+# 		msg_edit+="\n\t$i) $RACINE$f2e"
+	done 
+	if [[ "$DE" == "" ]] || [[ -z ${envir[$DE]} ]]; then 
+# 		msg_nn "$_env"
+		msg_nn "$(rid_menu -q "$_env" "${ENVIRONNEMENT[@]}")"
+		while [[ "$DE" == "" ]] || [[ -z ${envir[$DE]} ]]; do
+			[[ "$OPT" != "" ]] && [[ -z ${envir[$OPT]} ]] && choix2error "$_valid_choice" "$OPT" && clear_line
+			OPT=$( rid "\r  ->" "$_choix_de" )
+			[[ ! -z $OPT ]] && [[ ! -z ${envir[$OPT]} ]] && DE="${envir[$OPT]}"
+			[[ "$OPT" == "q" ]] && exit
+			[[ "$OPT" == "0" ]] && DE=0 && break 
+		done
+	fi
+# 	while [[ "$DE" == "" ]] || [[ -z ${envir[$DE]} ]]; do
+# 		if [[ -z "$Desktops" ]]; then
+# 			i=1
+# 			while [[ ! -z ${envir[$i]} ]] ; do
+# 				envir[_${envir[$i]}]=1
+# 				envir[_$i]=1
+# 				Desktops="$Desktops\t ${i}) ${envir[${i}]}\n"
+# 				i=$((i+1))
+# 			done
+# # 			envir[_0]=1
+# # 			while [[ $i -lt $((NB_DESKTOPS+1)) ]] ; do
+# # 				Desktops="$Desktops\t ${i}) ${envir[${i}]}\n"
+# # 				i=$((i+1))
+# # 			done
+# 		else
+# 			error "$_valid_choice" "$OPT"
+# 		fi
+# 		msg_n "$_env"
+# 		echo -e "${Desktops[@]}"
+# 		OPT=$(rid "$_choix_de" )
+# 		[[ "$OPT" != "" ]] && DE=${envir[$OPT]}
+# 		[[ $OPT -eq  0 ]] && DE=0 && break 
+# # 		 [[ -z ${valid_envir[$DE]} ]] &&
+# 	done
+	[[ "$DE" != "0" ]] && msg_n "32" "32" "$_env_set" "$DE"
+	[[ "$DE" != "0" ]] && [[ -z "$DM" ]] && ! rid_continue "$_defaultdm" "${envir[syst_$DE]}" && choose_dm "$DE"
+}
+name_host () {
+	#NOM MACHINE
+	NAME_MACHINE=$1; [[ "$NAME_MACHINE" != "" ]] && msg_n "32" "32" "$_hostname_set" "$NAME_MACHINE"
+	while [[ $NAME_MACHINE == "" ]]; do
+		NAME_MACHINE=$(rid "$_hostname" )
+	done
+	
+}
+
+name_user () {
+	#NOM UTILISATEUR
+	USER_NAME=$1; [[ "$USER_NAME" != "" && $USER_NAME != "root" ]] && msg_n "32" "32" "$_username_set" "$USER_NAME"
+	while [[ $USER_NAME == "" || $USER_NAME == "root"  ]]; do
+		[[ $USER_NAME == "root" ]] && msg_n "31" "31" "User login can't be %s !" "$USER_NAME"
+		USER_NAME=$(rid "$_username " )
+	done
+}
+
+# INSTALLATION DE GRUB SUR LE DISQUE DUR $1
+check_disk() { [[ -b "$1" ]] && return 0 || die "$_grub_unable $1"; }
+cache_packages () { [[ -d "$1" ]] && CACHE_PAQUET=$1 || die "$_not_a_dir" $1; }
+
+# From AIF ARchitect... 
+# Set keymap for X11 
+ set_xkbmap() {
+	declare -A langue
+	XKBMAP_LIST=""
+	keymaps_xkb=("af_Afghani al_Albanian am_Armenian ara_Arabic at_German-Austria az_Azerbaijani ba_Bosnian bd_Bangla be_Belgian bg_Bulgarian br_Portuguese-Brazil bt_Dzongkha bw_Tswana by_Belarusian ca_French-Canada cd_French-DR-Congo ch_German-Switzerland cm_English-Cameroon cn_Chinese cz_Czech de_German dk_Danishee_Estonian epo_Esperanto es_Spanish et_Amharic fo_Faroese fi_Finnish fr_French gb_English-UK ge_Georgian gh_English-Ghana gn_French-Guinea gr_Greek hr_Croatian hu_Hungarian ie_Irish il_Hebrew iq_Iraqi ir_Persian is_Icelandic it_Italian jp_Japanese ke_Swahili-Kenya kg_Kyrgyz kh_Khmer-Cambodia kr_Korean kz_Kazakh la_Lao latam_Spanish-Lat-American lk_Sinhala-phonetic lt_Lithuanian lv_Latvian ma_Arabic-Morocco mao_Maori md_Moldavian me_Montenegrin mk_Macedonian ml_Bambara mm_Burmese mn_Mongolian mt_Maltese mv_Dhivehi ng_English-Nigeria nl_Dutch no_Norwegian np_Nepali ph_Filipino pk_Urdu-Pakistan pl_Polish pt_Portuguese ro_Romanian rs_Serbian ru_Russian se_Swedish si_Slovenian sk_Slovak sn_Wolof sy_Arabic-Syria th_Thai tj_Tajik tm_Turkmen tr_Turkish tw_Taiwanese tz_Swahili-Tanzania ua_Ukrainian us_English-US uz_Uzbek vn_Vietnamese za_English-S-Africa")
+	j=0
+# 	&& -e "$1"
+	[[ "$1" == "" ]] && ( msg_n "$_set_keymapX11" && msg_nn2 "$_list_loading"  "X11 keymaps" ) || msg_nn2 "33" "$_x11k_checking" "$1"
+	loading &
+	PID_LOAD=$! && disown
+	for i in ${keymaps_xkb}; do
+		XKBMAP_LIST="$( echo "${XKBMAP_LIST} $((j+1))) ${i}" ) $( [[ "$(expr $((j+1))  % 4 )"  == "0" ]] && echo "\n"  ) "
+		j=$((j+1))
+		langue[$j]="${i}"
+		langue[_$j]="1"
+		langue[_$(echo ${i} |sed 's/_.*//')]="$(echo ${i} |sed 's/_.*//')"
+		localisation_tab[$(echo ${i} |sed 's/_.*//')]="1"
+	done
+	kill $PID_LOAD && printf "\b"
+	[[ "$1" == "" ]] && msg_nn_end "$_ok"
+	if [[ "$1" == "" || -z "${localisation_tab[$1]}" ]]; then
+		[[ "$1" != "" ]] && msg_nn_end "$_fail"
+		XKBMAP_LIST=${XKBMAP_LIST} 
+		echo -e ${XKBMAP_LIST} | column -t
+		XKBMAP=$( rid "$_choix_de $_pageup" )
+		while [[ "${langue[_$XKBMAP]}" != "1" ]]; do
+			XKBMAP=$( rid "$_choix_de $_pageup" )
+		done
+		X11_KEYMAP=$(echo ${langue[${XKBMAP}]} | sed 's/_.*//')
+	else
+		msg_nn_end "$_ok"	
+	fi
+	msg_n "32" "32" "$_x11k_selected" "$X11_KEYMAP"
+}
+
+# Set Zone and Sub-Zone
+set_timezone() {
+	declare -A zones
+	declare -A subzones
+	TIMEZONE=$1
+	if [[ "$TIMEZONE" == "" || !  -e /usr/share/zoneinfo/$TIMEZONE ]]; then
+		if [[ "$ZONE" == "" ]]; then
+			j=0
+			[[ "$TIMEZONE" == "" ]] && ( msg_n "$_set_timezone" && msg_nn2 "$_list_loading" ) || msg_nn2 "33" "$_timezone_checking" "$TIMEZONE"
+			loading &
+			PID_LOAD=$! && disown
+			for i in $(cat /usr/share/zoneinfo/zone.tab | awk '{print $3}' | grep "/" | sort -ud); do
+				ZONE="$ZONE ${i} -"
+				zones["$( echo ${i})"]="1"
+				subzones["$( echo ${i} | sed "s/\/.*//g"  )"]="${subzones["$( echo ${i} | sed "s/\/.*//g"  )"]} $( echo ${i} | sed "s/$( echo ${i} | sed "s/\/.*//g"  )\///g"  )"
+				j=$((j+1))
+			done
+			j=0
+			for i in $(cat /usr/share/zoneinfo/zone.tab | awk '{print $3}' | grep "/" | sed "s/\/.*//g" | sort -ud); do
+				ZONE_AFF="$( echo "${ZONE_AFF} $((j+1))) ${i}" ) $( [[ "$(expr $((j+1))  % 4 )"  == "0" ]] && echo "\n"  ) "
+				j=$((j+1))
+				zones[$j]="1"
+				zones[_$j]="$i"
+			done
+			kill $PID_LOAD && printf "\b"
+		fi
+		if [[ "$TIMEZONE" == "" || -z "${zones["$TIMEZONE"]}" ]]; then
+			msg_nn_end "$( [[ "$TIMEZONE" == "" ]] && echo "$_ok" || echo "$_fail" )"
+			echo -e "${ZONE_AFF}" | column -t
+			NUM_TIMEZONE=$( rid "$_choix_de" )
+			while [[ "$NUM_TIMEZONE" == "" || "${zones[$NUM_TIMEZONE]}" != "1" ]]; do
+				NUM_TIMEZONE=$( rid "$_choix_de" )
+			done		
+			j=0
+			for i in ${subzones[${zones[_$NUM_TIMEZONE]}]}; do
+				SUBZONE_AFF="$( echo "${SUBZONE_AFF} $((j+1))) ${i}" ) $( [[ "$(expr $((j+1))  % 4 )"  == "0" ]] && echo "\n"  ) "
+				j=$((j+1))
+				subzones[_$j]="$i"
+			done
+			echo -e "${SUBZONE_AFF}" | column -t
+			while [[ "$TIMEZONE" == "" || "${zones[$TIMEZONE]}" != "1" ]]; do
+				NUM_SUBTIMEZONE=$( rid "$_choix_de" )
+				SUBTIMEZONE="${subzones[_$NUM_SUBTIMEZONE]}"		
+				TIMEZONE="${zones[_$NUM_TIMEZONE]}/$SUBTIMEZONE"
+			done
+		else
+			msg_nn_end "$_ok"		
+		fi
+	fi
+
+	msg_n "32" "32" "$_timezone_set" "$TIMEZONE"
+	sleep 1
+}
+
+ set_console_kmap() {
+	declare -A valid_kmap	
+	KEYMAPS=""
+	j=0
+	CONSOLEKEYMAP="$1"
+	if [[ ! -e "$2/usr/share/kbd/keymaps" ]]; then
+		msg_n "$_missing_file" "/usr/share/kbd/keymaps"
+		wait_arch_define
+	fi
+	[[ "$CONSOLEKEYMAP" != "" ]] &&  msg_nn2 "33" "$_console_k_checking" "$CONSOLEKEYMAP" || ( msg_n "$_set_consolek" && msg_nn2 "$_list_loading" && sleep 1 )
+	loading &
+	PID_LOAD=$! && disown
+	for i in $(ls -R "$2/usr/share/kbd/keymaps" | grep "map.gz" | sed 's/\.map.gz//g' | sort); do
+		j=$((j+1))
+		valid_kmap["$j"]="$i"
+		valid_kmap["_$j"]="1"
+		valid_kmap["$i"]="1"
+		KEYMAPS="${KEYMAPS} $j) ${i} $( [[ "$(expr $((j+1))  % 4 )"  == "0" ]] && echo "\n"  ) "
+	done
+	kill $PID_LOAD && printf "\b"
+	[[ "$CONSOLEKEYMAP" == "" ]] && msg_nn_end "$_ok" || ([[ -z "${valid_kmap["$CONSOLEKEYMAP"]}" ]] && msg_nn_end "$_fail" || msg_nn_end "$_ok" )
+	if [[ "$CONSOLEKEYMAP" == "" || -z "${valid_kmap["$CONSOLEKEYMAP"]}" ]]; then
+		echo -e $KEYMAPS | column -t
+		CONSOLEKEYMAP=
+		while [[ "$CONSOLEKEYMAP" == "" && "${valid_kmap["_$NUM_KEYMAP"]}" != "1" ]]; do
+			NUM_KEYMAP=$( rid "$_choix_de $_pageup" )
+			CONSOLEKEYMAP="${valid_kmap[$NUM_KEYMAP]}"
+		done
+	fi
+	msg_n "32" "32" "$_console_k_set" "$CONSOLEKEYMAP"
+}
+
+set_locale() {
+	declare -A locales
+	LOCALES=""
+	j=0
+	LA_LOCALE="$1" 
+	
+	if [[ ! -e "$2/etc/locale.gen" ]]; then
+		msg_n "$_missing_file" "/etc/locale.gen"
+		wait_arch_define
+	fi
+	[[ "$LA_LOCALE" != "" ]] && msg_nn2 "33" "$_locale_checking" "$LA_LOCALE" || ( msg_n "$_set_locale" && msg_nn2 "$_list_loading" )
+	loading &
+	PID_LOAD=$! && disown
+	for i in $( cat "$2/etc/locale.gen" | grep -v "#  " | sed 's/#//g' | sed 's/ UTF-8//g' | grep .UTF-8 ); do
+		LOCALES="${LOCALES} $((j+1))) ${i} $( [[ "$(expr $((j+1))  % 4 )"  == "0" ]] && echo "\n"  ) "
+		j=$((j+1))
+		locales[$( echo $i  | sed "s/\..*//" )]=1
+		locales[$j]="$i"
+	done
+	kill $PID_LOAD && printf "\b"
+	[[ "$LA_LOCALE" == "" ]] && msg_nn_end "$_ok" || ([[ -z "${locales["$( echo $LA_LOCALE  | sed "s/\..*//" )"]}" ]] && msg_nn_end "$_fail" || msg_nn_end "$_ok" )
+
+	if [[ "$LA_LOCALE" == "" || -z "${locales["$( echo $LA_LOCALE  | sed "s/\..*//" )"]}" ]]; then
+		echo -e $LOCALES | column -t
+		while [[ "$LA_LOCALE" == "" || -z "${locales["$( echo $LA_LOCALE  | sed "s/\..*//" )"]}" ]]; do
+			local_tmp="$( rid "$_choix_de $_pageup" )"
+			[[ "$local_tmp" != "" ]] && LA_LOCALE=${locales[$local_tmp]}
+		done
+	fi
+	msg_n "32" "32" "$_locales_set" "$LA_LOCALE"
+}
+
+perso () {
+	FLAG="$1"
+	case "$FLAG" in
+		b)
+			write_package "bluez bluez-utils" files/de/common.conf
+			SYSTD_TOENABLE="$SYSTD_TOENABLE bluetooth"
+			return 1
+		;;
+		p) 
+			write_package "cups gtk3-print-backends " files/de/common.conf
+			SYSTD_TOENABLE="$SYSTD_TOENABLE org.cups.cupsd"
+			return 1
+		;;
+		H) 
+		# gtk3-print-backends pour lister les imprimantes dans firefox
+			write_package "cups hplip gtk3-print-backends " files/de/common.conf
+			SYSTD_TOENABLE="$SYSTD_TOENABLE org.cups.cupsd"
+			return 1
+		;; 
+		# LANGUAGE FOR Libreoffice and Thunderbird
+		L) 
+			write_package "libreoffice-still $( trans_packages "libreoffice-still" "$LA_LOCALE" )" files/de/common.conf
+			return 1
+		;;
+		T) 
+			write_package "thunderbird $( trans_packages "thunderbird-i18n" "$LA_LOCALE" )" files/de/common.conf
+			return 1
+		;;
+		s) 
+			write_package "xf86-input-libinput " files/de/common.conf
+			return 1
+
+		;;
+		q) 
+			QUIET="-q "
+			return 1
+		;;
+		t) 
+			NO_EXEC=1
+			TESTING="-t "
+			return 1
+		;;
+# 		m) 
+# #                     sed -i "s/#\[multilib\]\n#/[multilib]/" files/pacman.conf
+#                    [[ "$ARCH" == "x64" ]] && echo -e "\n#Multilib configuration\n[multilib]\nInclude = /etc/pacman.d/mirrorlist"
+# #                    >> files/pacman.conf.$ARCH
+# 
+# #                     sed -i "s/#[multilib]/[multilib]/" files/pacman.conf
+# # 			write_package "xf86-input-synaptics" files/de/common.conf
+# # 			COMMAND2LAUNCH="$( echo $COMMAND2LAUNCH | sed "s/-$FLAG/ /")"
+# # 			SHOW_COMMANDE="$( echo $SHOW_COMMANDE | sed "s/-$FLAG/ /")"
+# 
+# 		;;
+	esac
+	return 0
+# 	write_package "$PACKAGE_TO_INSTALL" files/de/common.conf
+}
+
+load_language() {
+	local file_2_load
+	
+	LA_LOCALE="$1";
+	[[ "${LA_LOCALE:${#LA_LOCALE}-5}" != "UTF-8" ]] && LA_LOCALE+=".UTF-8" 
+	
+	file_2_load="files/lang/${LA_LOCALE:0:${#LA_LOCALE}-6}.trans"
+	if [[ -e $DIR_SCRIPTS/$file_2_load ]]; then 
+# 	die "$file_2_load"
+		source "$DIR_SCRIPTS/$file_2_load" 
+		return 0
+	else
+		file_2_load="files/lang/${LANG:0:${#LANG}-6}.trans"
+		if [[ -e "$DIR_SCRIPTS/$file_2_load" ]]; then 
+			source "$DIR_SCRIPTS/$file_2_load"
+			locale_2_load=${LANG:0:${#LANG}-6}
+		else
+			source "$DIR_SCRIPTS/files/lang/en_GB.trans" 
+			locale_2_load="en_GB"
+			
+		fi
+		echo "${LA_LOCALE:0:5}" | grep -q "_" && msg_n2 "31" "31" "$_no_translation" "${LA_LOCALE:0:${#LA_LOCALE}-6}" "$locale_2_load" && return 0 
+		LA_LOCALE="" && return 1 
+	fi
+}
+
+termine() {
+	msg_nn2 "32" "32" "$show_a2d" "$RACINE" 
+	choix_fin=$(rid "\t->" "32")
+	case $choix_fin in
+		1) is_root "reboot" && rid_continue "Reboot ?" && reboot ;;
+		2) is_root "poweroff" && rid_continue "Poweroff ?" && poweroff ;;
+		3) 
+			msg_n "32" "32" "Recommence avec la commande :\n%s" "$LAUNCH_COMMAND"
+			$LAUNCH_COMMAND
+			exit $?
+			;;
+		4) 
+			sed -i "s/PACSTRAP_OPTIONS=\"/PACSTRAP_OPTIONS=\"-i/" $FILE2SOURCE$NAME_MACHINE-$LA_LOCALE.conf 
+			$LAUNCH_COMMAND
+			exit $?
+		;;
+		5) 
+			rm /tmp/done/anarchi_* 
+		;;
+		6)
+# 			msg_n "cp -RfLv $DIR_SCRIPTS/{$NAME_SCRIPT2CALL,$NAME_SCRIPT,files} files/"
+# 			mkdir -p files/anarchic
+# 			cp -RfL $DIR_SCRIPTS/{$NAME_SCRIPT2CALL,$NAME_SCRIPT,files} files/anarchic/ >> /dev/null 2>&1
+
+# 			cp -RfL $DIR_SCRIPTS/{$NAME_SCRIPT2CALL,$NAME_SCRIPT,files} files/anarchic || error "$_install_copie"
+# 			cp -RfL $DIR_SCRIPTS/../services files/services || error "$_install_copie"
+			
+			bash files/extras/arch-utils.sh --no-reboot "$RACINE"
+		;;
+		7)
+			bash files/extras/arch-utils.sh --no-reboot "$RACINE" edit
+		;;
+		8)
+			nano $FILE_COMMANDS
+		;;
+		9)
+			nano $LOG_EXE
+		;;
+		q) exit $FIN
+		;;
+	esac
+	termine
+}
+# END FUNCTIONS
+
+# BEGIN Declaration des tableaux
+declare -A localisation_tab
+declare -A valid_arch=( [1]="x64" [2]="i686" )
+# Arch based distributions
+declare arch_base=( "Manjaro" "Antergos" )
+declare -A netw
+
+declare -A yaourt_envir=(
+	[0]=""
+	[plasma]=""
+	[kde4]=""
+	[gnome]=""
+	[mate]=""
+	[lxde]=""
+	[xfce]=""
+	[lxqt]=""
+)
+
+# END Declaration
+
+_needed_commands="arch-chroot arch-install-scripts" ;
+
+
+# Usefull functions 
+# source $DIR_SCRIPTS/files/futil
+# source $DIR_SCRIPTS/files/drv_vid 
+# source $DIR_SCRIPTS/files/net-utils
+files2source=( "$DIR_SCRIPTS/files/src/bash-utils.sh" "$DIR_SCRIPTS/files/src/futil" "$DIR_SCRIPTS/files/src/doexec" "$DIR_SCRIPTS/files/src/net-utils" "$DIR_SCRIPTS/files/drv_vid")
+
+source $DIR_SCRIPTS/files/src/sources_files.sh "${files2source[@]}"
+# || { printf "\"%s\" est introuvable !" "$DIR_SCRIPTS/files/bash-utils.sh" && exit 1; }
+# declare -A valid_iface
+# echo "Le fichier est sourcé !"
+# # source_files "${files2source[@]}"
+# msg_n "${envir[*]}"
+# msg_n "${valid_iface[*]}"
+
+hostcache=0
+copykeyring=1
+copymirrorlist=1
+ARCH=
+GRUB_INSTALL=
+SYSTD=
+SOFT_UTILS=
+SYNAPTICS_DRIVER=
+ON_ARCH_BASE=0
+# Not in arch based 
+REQUIRE_PACMAN=0
+
+
+# Set localisation
+load_language "$( echo $1 | sed "s/\..*//" )" && shift 
+msg_n "32" "32" "%s" "$_welcome" 
+
+
+# edit_file
+# exit
+
+checkrequirements
+
+if ls $FILE2SOURCE*.conf >> /dev/null 2>&1; then
+	rf="$(rid_1 "32" "32" "$_file_load (%s)  [ ${_yes^}/$_no/e ]" "$( ls $FILE2SOURCE*.conf )" )"
+	while [[ "${rf,,}" != "$_no" ]]; do
+		[[ "${rf,,}" == "e" ]] && nano $FILE2SOURCE*.conf
+		if [[ "${rf,,}" == "$_yes" ]] || [[ "$rf" == "" ]]; then
+			FROM_FILE=1
+			source $FILE2SOURCE*.conf
+# 			Not in Arch based distributions...
+			(( $REQUIRE_PACMAN )) && define_arch "$ARCH" && wait_arch_define
+			(( ! $REQUIRE_PACMAN )) && PREFIX_PACMAN=""
+
+			envir[syst_$DE]="$DM"
+			envir[dm_$DE]="$DM"
+			[[ ! -z "${envir[pack_$DM]}" ]] && envir[dm_$DE]="${envir[pack_$DM]}"
+			while getopts ':C:c:tdGiMpqTLsbHu:l:a:e:n:g:h:z:k:K:' flag; do
+				case $flag in
+					q|t) perso "$flag"
+					;;
+				esac	
+			done
+
+			break;
+		fi
+		rf="$(rid_1 "32" "32" "$_file_load (%s)  [ ${_yes^}/$_no/e ]" "$( ls $FILE2SOURCE* )" )"
+	done
+	msg_nn_end
+	[[ "$rf" == "$_no" ]] && rm $FILE2SOURCE*.conf
+fi
+
+if [[ ! $FROM_FILE ]]; then
+	if [[ -z $1 || $1 = @(-h|--help) ]]; then
+		msg "$_nodir"
+		usage
+		exit $(( $# ? 0 : 1 ))
+	fi
+	while getopts ':C:c:tdGiMpqTLsbHu:l:a:e:n:g:h:z:k:K:' flag; do
+		case $flag in
+			C) SHOW_COMMANDE+=" -C $OPTARG" ;;
+			c) cache_packages "$OPTARG" ;; 
+			d)
+				directory=1
+				SHOW_COMMANDE+=" -d"
+			;;
+			a) define_arch "$OPTARG" ;;
+			n) CONF_NET="$OPTARG" ;;
+			g) DRV_VID="$OPTARG" ;;
+			e) DE="$OPTARG" ;;
+# 			D) DM="$OPTARG" ;;
+			K) X11_KEYMAP="$OPTARG" ;;
+			k) CONSOLEKEYMAP="$OPTARG" ;;
+			z) TIMEZONE="$OPTARG" ;;
+			h) NAME_MACHINE="$OPTARG" ;;
+			u) USER_NAME="$OPTARG" ;;
+			p|T|L|b|H|i|G|M|s|d)
+				SHOW_COMMANDE+=" -$flag"
+			;;
+			
+			q|t) 
+				perso "$flag";
+			;;
+			l) check_disk "$OPTARG" && GRUB_INSTALL="$OPTARG" ;;
+			:) die "$_argument_option" "${0##*/}" "$OPTARG" ;;
+			?) die "$_invalid_option" "${0##*/}" "$OPTARG" ;;
+		esac
+	done
+	(( ! $REQUIRE_PACMAN )) && PREFIX_PACMAN=""
+
+	shift $(( OPTIND - 1 ))
+
+	(( $# )) || die "$_nodir"
+
+	RACINE=$1; shift
+	OTHER_PACKAGES="$@"
+	
+	[[ "$ARCH" == "" ]] && define_arch "$ARCH"
+
+	# check/set configuration
+	conf_net "$CONF_NET" 
+	graphic_setting "$DRV_VID" 
+	[[ "$DRV_VID" != "0" ]] && desktop_environnement "$DE"
+	name_host "$NAME_MACHINE"
+	name_user "$USER_NAME"
+	set_locale "$LA_LOCALE" "$PREFIX_PACMAN"
+	set_timezone "$TIMEZONE"
+	set_console_kmap "$CONSOLEKEYMAP" "$PREFIX_PACMAN"
+	set_xkbmap "$X11_KEYMAP"
+fi
+[[ -d $RACINE ]] || die "$_not_a_dir" "$RACINE"
+if ! mountpoint -q "$RACINE" && (( ! directory )); then
+	error "$_mountpoint" "$RACINE"
+fi
+
+# Check if we are on arch based distribution and ask for which distribution we want...
+for ab in "${arch_base[@]}"; do
+	if cat /etc/issue | grep -q "$ab"; then
+		if ! rid_continue "Installer $ab ?"; then
+			ON_ARCH_BASE=1
+			SHOW_COMMANDE="$SHOW_COMMANDE -M"
+			break
+		fi
+	fi		
+done
+
+# Teste si on est bien en root !
+# "$LAUNCH_COMMAND"
+
+
+# If we are on arch based distribution
+if (( $ON_ARCH_BASE ));then
+	# Copie de la liste des mirroirs de Architect...
+	#
+	# TODO Faire autrement
+	# Ca doit plus marcher...
+	mkdir -p $RACINE/etc/pacman.d
+	cp files/mirrorlist $RACINE/etc/pacman.d/
+	sed -i "s/Include = \/etc/Include = ${RACINE//\//\\\/}\/etc/" files/pacman.conf.$ARCH
+fi
+
+# BEGIN GRAPHIC DRIVERSOFTS LANG and SYSTEMD SERVICE TO ENABLE 	
+[[ "$DE" != "0" ]] && SYSTD_TOENABLE+=" ${envir[syst_$DE]}"
+[[ "$CONF_NET" == "nm" || "$CONF_NET" == "network-manager" || "$CONF_NET" =~ "networkmanager" || "$WIFI_NETWORK" =~ "networkmanager" ]] && write_package "networkmanager ${envir[netm_$DE]}" "files/de/common.conf" && SYSTD_TOENABLE+=" NetworkManager"
+[[ "$CONF_NET" == "connman" ]] && write_package "connman" "files/de/common.conf" 
+# && SYSTD_TOENABLE+=" NetworkManager"
+
+[[ "$CONF_NET" != "none" && "$CONF_NET" != "nm" && "$CONF_NET" != "network-manager" && ! "$CONF_NET" =~ "networkmanager" && "$WIFI_NETWORK" == "" && "$CONF_NET" != "nfsroot" ]] && SYSTD_TOENABLE+=" $CONF_NET"
+[[ "$WIFI_NETWORK" != "" ]] && net_wifi "$WIFI_NETWORK" && cp /tmp/$NET_CON files/
+# [[ "$DE" == "mate" ]] && rid_continue "Utiliser Mate GTK3 ?" && ( cd files/de/ && cat mate-gtk3.conf > mate.conf )
+
+# Display Manager
+write_package "${envir[dm_$DE]}" "files/de/common.conf" 
+
+# GRAPHIC DRIVER
+write_package "${graphic_drv[_$DRV_VID]}" "files/de/common.conf" 
+source files/softs-trans
+# Kde lang
+[[ "$DE" == "plasma" || "$DE" == "kde4" ]] && write_package "$( trans_packages "kde-l10n" "$LA_LOCALE" )" files/de/plasma.conf
+# Firefox lang
+write_package "$NAV_PACKAGES $( trans_packages "$NAV_PACKAGES-i18n" "$LA_LOCALE" )" files/de/common.conf
+
+PACSTRAP_OPTIONS=""
+for i in $SHOW_COMMANDE; do
+	perso "$( echo "${i}" | sed "s/-//")"  && COMMAND2LAUNCH="${COMMAND2LAUNCH//${i}/}" && PACSTRAP_OPTIONS+=" ${i}" && SHOW_COMMANDE="${SHOW_COMMANDE//${i}/}"
+done
+
+for i in $( grep -h -v ^# files/de/trans-packages.conf ); do
+	write_package "$i" files/de/common.conf
+done
+
+if [[ "${yaourt_envir[$DE]}" != "" ]]; then
+	write_package "${yaourt_envir[$DE]}" files/de/yaourt.conf
+fi
+
+if (( $REQUIRE_PACMAN )); then
+	notinarch_function 
+else
+	COMMAND2LAUNCH="$WORK_DIR/$NAME_SCRIPT2CALL $LA_LOCALE -K $X11_KEYMAP -k $CONSOLEKEYMAP -z \"$TIMEZONE\" -a $ARCH -n $CONF_NET $( [[ "$DRV_VID" != "0" ]] && echo "-g $DRV_VID  -e $DE" ) -h $NAME_MACHINE -u $USER_NAME $( [[ "$GRUB_INSTALL" != "" ]] && echo "-l $GRUB_INSTALL" ) $( [[ "$CACHE_PAQUET" != "" ]] && echo "-c $CACHE_PAQUET" ) $QUIET$TESTING$PACSTRAP_OPTIONS $RACINE $OTHER_PACKAGES"	
+	
+	search_pkg $OTHER_PACKAGES
+fi
+
+LAUNCH_COMMAND="$DIR_SCRIPTS/$NAME_SCRIPT $LA_LOCALE -K $X11_KEYMAP -k $CONSOLEKEYMAP -z $TIMEZONE -a $ARCH -n $CONF_NET $( [[ "$DRV_VID" != "0" ]] && echo "-g $DRV_VID  -e $DE" ) -h $NAME_MACHINE -u $USER_NAME $( [[ "$GRUB_INSTALL" != "" ]] && echo "-l $GRUB_INSTALL" ) $( [[ "$CACHE_PAQUET" != "" ]] && echo "-c $CACHE_PAQUET" ) $QUIET$TESTING$SHOW_COMMANDE $PACSTRAP_OPTIONS $RACINE $OTHER_PACKAGES"
+
+    echo $DIR_SCRIPTS/$NAME_SCRIPT $LAUNCH_COMMAND > /tmp/aaic-$( date "+%Y%m%d-%H-%M" ) && msg_ntin "32" "32" "$_util_command" "/tmp/aaic-$( date "+%Y%m%d-%H-%M" )"
+cat <<EOF
+
+$LAUNCH_COMMAND
+
+EOF
+
+echo "#!/bin/bash
+
+#CONFIG
+ARCH=$ARCH
+RACINE=$RACINE
+GRUB_INSTALL=$GRUB_INSTALL
+DRV_VID=$DRV_VID
+DE=$DE
+DM=${envir[syst_$DE]}
+CONF_NET=$CONF_NET
+WIFI_NETWORK=$WIFI_NETWORK
+NAME_MACHINE=$NAME_MACHINE
+USER_NAME=$USER_NAME
+CACHE_PAQUET=$CACHE_PAQUET
+
+# X11_KEYMAP
+LA_LOCALE=$LA_LOCALE
+CONSOLEKEYMAP=$CONSOLEKEYMAP
+TIMEZONE=$TIMEZONE
+X11_KEYMAP=$X11_KEYMAP
+
+PACSTRAP_OPTIONS=\"$PACSTRAP_OPTIONS\"
+SHOW_COMMANDE=\"$SHOW_COMMANDE \$PACSTRAP_OPTIONS\"
+OTHER_PACKAGES=\"$OTHER_PACKAGES\"
+" > $FILE2SOURCE$NAME_MACHINE-$LA_LOCALE.conf
+
+echo -en "$SYSTD_TOENABLE" >> files/systemd.conf
+
+# END GRAPHIC DRIVERSOFTS LANG and SYSTEMD SERVICE TO ENABLE
+	
+echo $LAUNCH_COMMAND >> /tmp/history
+rid_exit "$_continue"
+msg_n "32" "$_go_on"
+run_or_su "${COMMAND2LAUNCH}"
+FIN=$?
+msg_n "$FIN"
+# "
+# Fin is set in linux-part.sh
+[[ ! -z $PID_COM ]] && FIN=$PID_COM
+
+case $FIN in
+	0) 
+		if (( ! $NO_EXEC )); then
+			msg_n "32" "32" "$_install_ok" "$LAUNCH_COMMAND"
+			mkdir -p /tmp/$NAME_MACHINE/files/{de,bgs,lang}
+	# 		cp $RACINE/post_install-$NAME_MACHINE.sh /tmp/$NAME_MACHINE/
+			cp $NAME_SCRIPT2CALL /tmp/$NAME_MACHINE/
+			cp $DIR_SCRIPTS/$NAME_SCRIPT /tmp/$NAME_MACHINE/
+			cp $FILE2SOURCE$NAME_MACHINE-$LA_LOCALE.conf /tmp/$NAME_MACHINE/
+			cp files/de/{common.conf,$DE.conf} /tmp/$NAME_MACHINE/files/de/
+			cp -R files/{src/futil,extras/genGrub.sh,custom*,systemd.conf,extras/ipxe*,pacman.conf.$ARCH} /tmp/$NAME_MACHINE/files/
+			
+			IMG_BG=$(find "$RACINE/boot/" -maxdepth 1 -type f -name bg.* | shuf | head -n 1 )
+			EXT_BG_NAME=$( echo "$IMG_BG" | sed "s/.*\.//")
+			[[ -e "$IMG_BG" ]] && cp $RACINE/boot/bg.$EXT_BG_NAME /tmp/$NAME_MACHINE/files/bgs/grub.$EXT_BG_NAME
+			
+			if [[ -e $RACINE/usr/share/pixmaps/ ]]; then
+				IMG_BG=$(find "$RACINE/usr/share/pixmaps/" -maxdepth 1 -type f -name bg.* | shuf | head -n 1 )
+				EXT_BG_NAME=$( echo "$IMG_BG" | sed "s/.*\.//")
+				[[ -e "$IMG_BG" ]] && cp "$RACINE/usr/share/pixmaps/bg.$EXT_BG_NAME" /tmp/$NAME_MACHINE/files/bgs/lightdm.$EXT_BG_NAME
+			fi
+			rid_yes_no "$_delete_tmp" && rm -R $WORK_DIR
+		else
+			msg_n "32" "32" "Vous pourrez trouver les commandes à éxecuter dans le fichier \"%s\".\n%sVoici la commande globale :\n%s"  "$FILE_COMMANDS" "==> " "$LAUNCH_COMMAND"
+		fi
+	;;
+		
+	1) error "$_install_error$_relaunch" "$LAUNCH_COMMAND" ;;
+	2) msg_n "$_relaunch" "$LAUNCH_COMMAND";;
+esac
+
+[[ ! -z $QUIET ]] && _choix_finish+=("$_show_logs")
+show_a2d="$( rid_menu -q "Que voulez vous faire ?" "${_choix_finish[@]}")"
+termine
+exit 0
