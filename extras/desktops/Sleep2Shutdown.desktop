@@ -1,0 +1,15 @@
+#!/usr/bin/env xdg-open
+[Desktop Entry]
+Categories=Utility;
+Comment[fr_FR]=
+Comment=
+Exec=konsole --new-tab /nfs/scripts/extinction_srv_light.sh
+GenericName[fr_FR]=Sleep2Shutdown
+GenericName=Sleep2Shutdown
+Icon=system-shutdown
+Name[fr_FR]=Sleep2Shutdown
+Name=Sleep2Shutdown
+Terminal=false
+# TerminalOptions=
+Type=Application
+

@@ -1,0 +1,15 @@
+#!/usr/bin/env xdg-open
+[Desktop Entry]
+Categories=Utility;
+Comment[fr_FR]=Bluetooth connexion before sleeping
+Comment=Bluetooth connexion before sleeping
+Exec=bash /nfs/scripts/sleep.sh
+GenericName[fr_FR]=Sleep_45
+GenericName=Sleep_45
+Icon=alienarena
+Name[fr_FR]=Sleep_45
+Name=Sleep_45
+Terminal=true
+# TerminalOptions=
+Type=Application
+
