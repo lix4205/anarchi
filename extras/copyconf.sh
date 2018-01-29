@@ -99,8 +99,6 @@ NAME_USER="$1"
 DE="$2"
 [[ -z $DIR_TARGET ]] && DIR_TARGET="/home/$NAME_USER"
 [[ -z $DIR_SOURCE ]] && DIR_SOURCE=$DIR_SCRIPTS/../users/$NAME_USER
-# Pour mon utilisateur particulier je change l'emplacement des sources...
-[[ "$NAME_USER" == "dux" ]] && DIR_SOURCE=$DIR_SCRIPTS/../../BACKUP/.$NAME_USER
 
 # echo $NAME_USER
 # echo $DE

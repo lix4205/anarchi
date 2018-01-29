@@ -191,7 +191,7 @@ desktop_environnement "$5"
 
 # On copie les fichier dans le 
 [[ "$WIFI_NETWORK" != "" ]] && conf_net_wifi "$WIFI_NETWORK" && cp /tmp/$NET_CON files/
-arch_chroot "$OLDROOT" "/bin/bash"
+
 arch_chroot "$TMPROOT" "$COMMAND4ARCH"
 PID_COM=$?
 

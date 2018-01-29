@@ -17,7 +17,7 @@
 # BEGIN USER CONFIG
 
 ARCH_PACKAGES="$( [[ "$ARCH" == "x64" ]] && echo "x86_64" || echo "$ARCH" )"
-
+CUSTOM_USER_SCRIPT="/tmp/files/custom.d/$NAME_USER"
 # random background LIGHTDM
 if [[ $DM == "lightdm" ]]; then
 	IMG_BG=$(find "/tmp/files/imgs/" -maxdepth 1 -type f | shuf | head -n 1 )
@@ -195,178 +195,25 @@ esac
 
 
 # BEGIN configuration by $NAME_USER 
+
 # BEGIN lix CONFIG
-if [ "$NAME_USER" == "lix" ]; then
-# ln -s $DIR_USR_CONF/$NAME_USER/CALIS ~/Calis
-# 	ln -s $DIR_USR_CONF/$NAME_USER/DIVERS ~/Divers
-# 	ln -s $DIR_USR_CONF/$NAME_USER/JEUX ~/Jeux
-# 	ln -s $DIR_USR_CONF/$NAME_USER/Telechargements ~/Téléchargements
-# 	ln -s $DIR_USR_CONF/$NAME_USER/Videos ~/Vidéos
-# 	ln -s $DIR_USR_CONF/$NAME_USER/Documents ~/
-# 	ln -s $DIR_USR_CONF/$NAME_USER/Music ~/
-# 	ln -s $DIR_USR_CONF/$NAME_USER/Pictures ~/
-	su $NAME_USER -c "echo \"DIR_SRV=/media/srv
-	DIR_SCR=\\\$DIR_SRV/scripts\" >> ~/.bashrc"
-	case $DM in
-		sddm)
-			sed -i "s/User=.*/User=$NAME_USER/" /etc/sddm.conf
-			sed -i "s/Session=.*/Session=$DE.desktop/" /etc/sddm.conf
-		;;
-# 		gdm) : ;;
-# 		lightdm) : ;;
-# 		lxdm) : ;;
-# 		slim) : ;;
-		nodm) :
-		;;
-	esac
-	case $DE in
-		plasma)
-# 			$pacman -S --noconfirm kdeconnect
-		;;
-# 		xfce)
-# 		;;
-# 		mate)
-# 		;;
-		lxqt) :
-		;;
-	esac
+if [[ -e "$CUSTOM_USER_SCRIPT" ]]; then
+    source "$CUSTOM_USER_SCRIPT"
+    if [[ -e $DIR_USR_CONF/$NAME_USER ]]; then
+        su $NAME_USER -c "bash /tmp/files/extras/copyconf.sh \"$DIR_USR_CONF/$NAME_USER\" $NAME_USER $DE" 
+        su - $NAME_USER -c "cp -PR $DIR_USR_CONF/$NAME_USER/* ."
+    else
+        su $NAME_USER -c "bash /tmp/files/extras/copyconf.sh \"$DIR_USR_CONF/$DEFAULT_USER\" $NAME_USER $DE"; 
+        su - $NAME_USER -c "cp -PR $DIR_USR_CONF/$DEFAULT_USER/* ."
+    fi
 fi
+
 # END
 
-# BEGIN Calis CONFIG
-if [ "$NAME_USER" == "calis" ]; then
-	su $NAME_USER -c "ln -s $DIR_USR_CONF/lix/CALIS ~/Calis
-	ln -s $DIR_USR_CONF/lix/DIVERS ~/Divers
-	ln -s $DIR_USR_CONF/lix/JEUX ~/Jeux
-	ln -s $DIR_USR_CONF/lix/Telechargements ~/Téléchargements
-	ln -s $DIR_USR_CONF/lix/Videos ~/Vidéos
-	ln -s $DIR_USR_CONF/lix/Documents ~/
-	ln -s $DIR_USR_CONF/lix/Music ~/
-	ln -s $DIR_USR_CONF/lix/Pictures ~/
-	cp $DIR_USR_CONF/lix/DIVERS/softs/AutoScan-Network-Linux-1.50.bin.tar.gz /tmp
-	cd /tmp
-	tar xzf AutoScan-Network-Linux-1.50.bin.tar.gz
-	"
-#	BEGIN AutoScan Network et VirtualBox
-	if [ "$ARCH" == "x64"  ]; then
-		:
-#		Il faut installer le fichier de police ttf-dejavu pour AutoScan Network
-# 		pacman -S ttf-dejavu archiso virtualbox
-	else
-#L'installation d'AutoScan Network ne marche pas en x64 (???) Voir plus bas pour le faire fonctionner...
-	# ... Mais on peut reprendre une install 32 bits existante...
-	# cp -a /media/tmp/opt/AutoScan /opt
-	# cp -v /media/tmp/usr/share/applications/autoscan-network.desktop /usr/share/applications
-	# Et peut-être executer ces deux commandes si il y a un problème de permission...
-	# chown root:root /opt/AutoScan/bin/autoscan-network-daemon
-	# chmod +sx /opt/AutoScan/bin/autoscan-network-daemon
-		/tmp/AutoScan-Network-Linux-1.50.sh	
-		$pacman -S ttf-dejavu archiso virtualbox
-	fi
-#	END AutoScan Network & VirtualBox
-
-# 	modules VirtualBox a charger au démarrage...
-# 	echo -e "vboxdrv\nvboxnetadp\nvboxnetflt\nvboxpci" > /etc/modules-load.d/virtualbox.conf
-	usermod -l user calis
-	usermod -m -d /home/user user
-	
-fi
-# END
-
-
-
-# BEGIN CUX CONFIG
-if [ "$NAME_USER" == "coutaud" ]; then
-	usermod -u 1001 $NAME_USER
-	$pacman -S --noconfirm aisleriot digikam skanlite gcompris
-fi
-# END
-[[ "$NAME_USER" == "dux" ]] && ! getent passwd $NAME_USER | grep -q 594 && usermod -u 594 $NAME_USER
-if [[ -e $DIR_USR_CONF/$NAME_USER ]]; then
-	su $NAME_USER -c "bash /tmp/files/extras/copyconf.sh \"$DIR_USR_CONF/$NAME_USER\" $NAME_USER $DE" 
-	su - $NAME_USER -c "cp -PR $DIR_USR_CONF/$NAME_USER/* ."
-else
-	su $NAME_USER -c "bash /tmp/files/extras/copyconf.sh \"$DIR_USR_CONF/$DEFAULT_USER\" $NAME_USER $DE"; 
-	su - $NAME_USER -c "cp -PR $DIR_USR_CONF/$DEFAULT_USER/* ."
-fi
 [[ $? -eq 0 ]] && echo "==> La configuration de $NAME_USER à été créée !"
 # Some aliases
 su $NAME_USER -c "echo -e \"# Some aliases\\nalias lsl=\\\"ls -l\\\"\nalias lsa=\\\"ls -a\\\" \" >> /home/$NAME_USER/.bashrc"
-# BEGIN DUX CONFIG
-if [ "$NAME_USER" == "dux" ]; then
-	echo "==> Creation de la session $NAME_USER" 
-#	Mon service perso
-	cp $DIR_SRV/dists-extra/extras/services/auto-launcher.service /usr/lib/systemd/system/$NAME_USER.service
-	# cp $DIR_SRV/dists-extra/extras/auto_launcher.sh /usr/bin/
-	[[ "$DM" == "lightdm" || "$DM" == "lxdm" ]] && sed -i "s/BusName=org.freedesktop.DisplayManager/#BusName=org.freedesktop.DisplayManager/" /usr/lib/systemd/system/$NAME_USER.service
 
-	cp /usr/lib/systemd/system/$NAME_USER.service /usr/lib/systemd/system/auto-launcher\@.service
-	# sed -i "s/auto_launcher.sh .*/auto_launcher.sh $NAME_USER $DM $DE/" /usr/lib/systemd/system/$NAME_USER.service
-	sed -i "s/ExecStart.*auto_launcher.sh .*/ExecStart=\/usr\/share\/dists-extra\/extras\/auto_launcher.sh $NAME_USER $DM $DE/" /usr/lib/systemd/system/$NAME_USER.service
-	sed -i "s/auto_launcher.sh .*/auto_launcher.sh %I $DM $DE/" /usr/lib/systemd/system/auto-launcher\@.service
-
-	bash $DIR_SRV/dists-extra/extras/install_extras.sh
-	systemctl disable $DM
-	echo "systemctl disable $DM"
-	systemctl enable $NAME_USER.service
-	echo "systemctl enable $NAME_USER.service"
-
-# 	! getent passwd $NAME_USER | grep -q 594 && usermod -u 594 $NAME_USER
-
-	if [[ -f /etc/grub.d/40_custom ]]; then	
-		echo -n "==> Recherche d'une image..." 
-		DIR_IMGS=$DIR_SRV/BACKUP/.dux/Images/
-		# BEGIN Chrismas config !!!
-		[[ $( date +%m ) -eq 12 && $( date +%d ) -gt 8 ]] || [[ $( date +%m ) -eq 1 && $( date +%d ) -lt 15 ]] && [[ -e $DIR_IMGS/Christmas ]] && DIR_IMGS=$DIR_IMGS/Christmas
-		# END Chrismas config !!!
-
-		ln -s $DIR_IMGS /home/dux/
-		IMG_AP_HOME="$(su - dux -c "source $DIR_SRV/dists-extra/extras/rdm_img.sh;imgs land $DIR_IMGS" )"
-		rm /home/dux/Images
-		
-		if [[ ! -z $IMG_AP_HOME ]]; then
-			echo "ok" 
-			EXT_BG_NAME=$( echo "$IMG_AP_HOME" | sed "s/.*\.//")
-			BG_NAME="bg.$EXT_BG_NAME"
-			su $NAME_USER -c "cp \"$IMG_AP_HOME\" \"/tmp/$BG_NAME\""
-			cp "/tmp/$BG_NAME" /boot/
-# 			exit 1
-			sed -i "s/.*GRUB_BACKGROUND=.*/GRUB_BACKGROUND=\"\/boot\/$BG_NAME\"/" /etc/default/grub
-			sed -i "s/GRUB_GFXMODE=.*/GRUB_GFXMODE=0x14c/" /etc/default/grub
-		else
-			echo "echec !"
-		fi
-		# PXE Entry
-		echo "menuentry \"dux live - MATE (iPXE)\" {
-    linux /dux/vmlinuz add_efi_memmap ip=:::::eth0:dhcp nfsroot=192.168.1.5:/nfs/pxe/cadux boot=casper quiet splash netboot=nfs
-    initrd /dux/initrd.gz
-}
-
-" >> /etc/grub.d/40_custom
-		mkdir /boot/dux
-		cp $DIR_SRV/pxe/cadux/casper/{initrd.gz,vmlinuz} /boot/dux/
-	fi
-
-else
-	cp $DIR_SRV/dists-extra/extras/services/auto-launcher.service /etc/systemd/system/dux.service
-	sed -i "s/auto_launcher.sh .*/auto_launcher.sh dux $DM $DE/" /etc/systemd/system/dux.service
-
-	
-# 	cp $DIR_SRV/scripts/dux/dux.service /etc/systemd/system/
-# 	sed -i "s/init_dux_light.sh dm/init_dux_light.sh dm $DM $DE/" /etc/systemd/system/dux.service
-	[[ "$DM" == "lightdm" ]] && sed -i "s/BusName=org.freedesktop.DisplayManager/#BusName=org.freedesktop.DisplayManager/" /etc/systemd/system/dux.service
-fi
-# END 
-# Copie de la configuration pour DE
-# [[ "$NAME_USER" != "dux" ]] && { 
-# su $NAME_USER -c "id"
-# ls -la "$DIR_USR_CONF/$NAME_USER"
-
-# [[ -e $DIR_USR_CONF/$NAME_USER ]] && { su $NAME_USER -c "bash /tmp/files/extras/copyconf.sh \"$DIR_USR_CONF/$NAME_USER\" $NAME_USER $DE" || su $NAME_USER -c "bash /tmp/files/extras/copyconf.sh \"$DIR_USR_CONF/$DEFAULT_USER\" $NAME_USER $DE"; } && echo "==> La configuration de $NAME_USER à été créée !"
-
-# END
-#SSH PERSO
-# su $NAME_USER -c "cp -R /media/srv/users/lix/DIVERS/racine/etc/skel/.ssh /home/$NAME_USER/"
 # On force le démontager du partage
 until ! mountpoint -q $DIR_SRV; do
         
