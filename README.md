@@ -19,9 +19,7 @@ Si aucun param&egrave;tre n'a &eacute;t&eacute; pass&eacute;, une s&eacute;rie d
 syst&egrave;me seront pos&eacute;es. <br />
 Toutefois vous pouvez passez les param&egrave;tres directement, voici une rapide description :
 <ul class="opts_list">
-    <li>Le premier param&egrave;tre &agrave; passer est la LOCALE (UTF-8 uniquement) utilis&eacute;e par le syst&egrave;me donc quelque chose du type :
-		
-    </li>
+    <li>Le premier param&egrave;tre &agrave; passer est la LOCALE (UTF-8 uniquement) utilis&eacute;e par le syst&egrave;me donc quelque chose du type : <br />\# /path/to/the/script/launchinstall.sh en_GB /path/to/install</li>
     <li>Tout comme pacstrap ,on peut ajouter des logiciels particulier en ajoutant les noms des paquets &agrave; la fin de la ligne de commande.<br />
     Par exemple pour GIMP et STEAM
 \# /path/to/the/script/launchinstall.sh en_GB /path/to/install gimp steam
