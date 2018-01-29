@@ -70,12 +70,11 @@ syst&egrave;me seront pos&eacute;es. <br />
 			<li><strong>-L</strong><br />
 			Installation de libreoffice</li>
 			<li><strong>-T</strong><br />
-			Installation de thunderbird<br /></li>
+			Installation de thunderbird<br /><br /></li>
 			<li><strong>-t</strong><br />
 			Test mode, commands are in /tmp/anarchi_command</li>
 			<li><strong>-h</strong><br />
 			Print this help message</li>
 		</ul>
-		
 		</li>
 	</ul>
