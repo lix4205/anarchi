@@ -120,8 +120,8 @@ notinarch_function() {
 	[[ ! -e "$ROOT_BOOTSTRAP$ROOT_DIR_BOOTSTRAP" ]] && mkdir $ROOT_BOOTSTRAP$ROOT_DIR_BOOTSTRAP
 	
 	msg_nn "$_prepare_chroot..."
-	bash
 	[[ -e $DIR_SCRIPTS/files/anarchi ]] && rm $DIR_SCRIPTS/files/anarchi
+	bash
 	cp -RfL $DIR_SCRIPTS/{$NAME_SCRIPT2CALL,files} $WORK_DIR_BOOTSTRAP/ || die "$_install_copie"
 	ln -fs  "$DIR_SCRIPTS" $WORK_DIR_BOOTSTRAP/files/anarchi
 	# Décommenter un seul serveur
