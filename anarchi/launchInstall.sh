@@ -22,7 +22,7 @@ FILE2SOURCE="/tmp/anarchi-"
 NAME_SCRIPT="launchInstall.sh"
 NAME_SCRIPT2CALL="pacinstall.sh"
 DEFAULT_CACHE_PKG="/var/cache/pacman/pkg"
-PREFIX_PACMAN="$WORK_DIR/root."
+PREFIX_PACMAN="$WORK_DIR/root.x86_64"
 ROOT_DIR_BOOTSTRAP="/install.arch"
 LOG_EXE="/tmp/anarchi.log"
 FILE_COMMANDS="/tmp/anarchi_command"
@@ -208,38 +208,43 @@ checkrequirements () {
 
 define_arch () {
 	ARCH=$1
+	[[ "$(uname -m)" == "i686" ]] && die "$_impossible"
+	[[ "$(uname -m)" != "x86_64" ]] && die "$_impossible"
+	ARCH="x64"
 	# For i686 processor... ask user to switch directly to i686 
-	[[ "$(uname -m)" == "i686" && "$ARCH" != "i686" ]] && rid_continue "$_processor_i686" && ARCH="i686" 
-	while [[ "$ARCH" == "" ]] || [[ "$ARCH" != "x64" && "$ARCH" != "i686" ]]; do
-# 		if [[ -z "$Architecture" ]]; then
-# 			i=1
-# 			while [[ $i -lt 3 ]] ; do
-# 				Architecture="$Architecture\t ${i}) ${valid_arch[${i}]}\n"
-# 				i=$((i+1))
-# 			done
-# 			msg_nn "$_arch"
-# 		else
-# 			error "$_valid_choice" "$OPT"
+# 	[[ "$(uname -m)" == "i686" && "$ARCH" != "i686" ]] && rid_continue "$_processor_i686" && ARCH="i686" 
+# 	while [[ "$ARCH" == "" ]] || [[ "$ARCH" != "x64" && "$ARCH" != "i686" ]]; do
+# # 		if [[ -z "$Architecture" ]]; then
+# # 			i=1
+# # 			while [[ $i -lt 3 ]] ; do
+# # 				Architecture="$Architecture\t ${i}) ${valid_arch[${i}]}\n"
+# # 				i=$((i+1))
+# # 			done
+# # 			msg_nn "$_arch"
+# # 		else
+# # 			error "$_valid_choice" "$OPT"
+# # 		fi
+# 		msg_nn "$_arch"
+# 		echo -e "$( print_menu "${valid_arch[@]}" )"
+# # exit
+# 
+# # 		echo -e "${Architecture[@]}"
+# 		OPT=$(rid "$_choix_de" )	
+# 		if [[ "$OPT" != "" ]]; then
+# 			[[ ! -z ${valid_arch[$OPT]} ]] && ARCH=${valid_arch[$OPT]} || error "$_valid_choice" "$OPT"
 # 		fi
-		msg_nn "$_arch"
-		echo -e "$( print_menu "${valid_arch[@]}" )"
-# exit
-
-# 		echo -e "${Architecture[@]}"
-		OPT=$(rid "$_choix_de" )	
-		if [[ "$OPT" != "" ]]; then
-			[[ ! -z ${valid_arch[$OPT]} ]] && ARCH=${valid_arch[$OPT]} || error "$_valid_choice" "$OPT"
-		fi
-	done
-	if  [[ "$(uname -m)" == "i686" && "$ARCH" == "x64" ]]; then 
-		die "$_impossible"
-	fi
+# 	done
+	
+	
+# 	if  [[ "$(uname -m)" == "i686" && "$ARCH" == "x64" ]]; then 
+# 		die "$_impossible"
+# 	fi
 
 	msg_n "32" "32" "$_arch_selected" "$ARCH"
 	if (( $REQUIRE_PACMAN )); then
 		UNAMEM=$ARCH
 		[[ "$ARCH" == "x64" ]] && UNAMEM="x86_64"
-		PREFIX_PACMAN+=$UNAMEM
+# 		PREFIX_PACMAN+=$UNAMEM
 		download_img
 	fi
 }
@@ -610,7 +615,8 @@ set_locale() {
 	LOCALES=""
 	j=0
 	LA_LOCALE="$1" 
-	
+	echo "$2 $PREFIX_PACMAN"
+# 	exit
 	if [[ ! -e "$2/etc/locale.gen" ]]; then
 		msg_n "$_missing_file" "/etc/locale.gen"
 		wait_arch_define

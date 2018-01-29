@@ -1,3 +1,5 @@
+#!/bin/bash
+
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
@@ -10,8 +12,6 @@
 # 
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
-#!/bin/bash
 
 declare -A tab_disk=( [a]="0" [b]="1" [c]="2" [d]="3" [e]="4" [f]="5" [g]="6"	[h]="7" [i]="8" [j]="9"	[k]="10" [l]="11"	[m]="12" [n]="13" 	[o]="14" [p]="15" [q]="16" [r]="17" [s]="18" [t]="19" [u]="20" [v]="21" [w]="22" [x]="23" [y]="24" [z]="25" )
 
