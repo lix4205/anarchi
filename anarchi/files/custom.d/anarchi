@@ -1,0 +1,28 @@
+# 	echo "Configuration personnalisé pour $NAME_USER..."
+# 	
+# 	su $NAME_USER -c "echo \"DIR_SRV=/media/srv
+# 	DIR_SCR=\\\$DIR_SRV/scripts\" >> ~/.bashrc"
+# 	case $DM in
+# 		sddm)
+# 			sed -i "s/User=.*/User=$NAME_USER/" /etc/sddm.conf
+# 			sed -i "s/Session=.*/Session=$DE.desktop/" /etc/sddm.conf
+# 		;;
+# # 		gdm) : ;;
+# # 		lightdm) : ;;
+# # 		lxdm) : ;;
+# # 		slim) : ;;
+# 		nodm) :
+# 		;;
+# 	esac
+# 	case $DE in
+# 		plasma)
+# # 			$pacman -S --noconfirm kdeconnect
+# 		;;
+# # 		xfce)
+# # 		;;
+# # 		mate)
+# # 		;;
+# 		lxqt) :
+# 		;;
+# 	esac
+
