@@ -25,61 +25,56 @@ syst&egrave;me seront pos&eacute;es. <br />
 		<ul class="opts_list">
 			<!-- Pacstrap options -->
 			<li class="opt">-C <span>&lt;config&gt;</span></li>
-			<li>Use an alternate config file for pacman</li>
+			<li style="list-style:none">Use an alternate config file for pacman</li>
 			<li class="opt">-d</li>
-			<li>Allow installation to a non-mountpoint directory</li>
+			<li style="list-style:none">Allow installation to a non-mountpoint directory</li>
 			<li class="opt">-G</li>
-			<li>Avoid copying the host's pacman keyring to the target</li>
+			<li style="list-style:none">Avoid copying the host's pacman keyring to the target</li>
 			<li class="opt">-i</li>
-			<li>Avoid auto-confirmation of package selections</li>
+			<li style="list-style:none">Avoid auto-confirmation of package selections</li>
 			<li class="opt">-M</li>
-			<li>Avoid copying the host's mirrorlist to the target</li>
+			<li style="list-style:none">Avoid copying the host's mirrorlist to the target</li>
 			<!-- Common options-->
 			<li class="opt">-a <span>&lt;arch&gt;</span></li>
-			<li>Architecture du processeur (x64/i686)</li>
+			<li style="list-style:none">Architecture du processeur (x64/i686)</li>
 			<li class="opt">-n <span>&lt;net_pref&gt;</span></li>
-			<li>Au choix: dhcpcd/dhcpcd@&lt;inet_addr&gt;,nm/networmanager<br>
+			<li style="list-style:none">Au choix: dhcpcd/dhcpcd@&lt;inet_addr&gt;,nm/networmanager<br>
 			Utilisation de NetworkManager ou dhcpcd sur toutes les interfaces ou avec l'interface &lt;inet_addr&gt;</li>
 			<li class="opt">-g <span>&lt;gpu_drv&gt;</span></li>
-			<li>Pilote carte graphique parmi intel,nouveau,radeon/ati,virtualbox/vb,nvidia/nvidia304/nvidia340,all ( all pour tout les 
-pilotes)</li>
+			<li style="list-style:none">Pilote carte graphique parmi intel,nouveau,radeon/ati,virtualbox/vb,nvidia/nvidia304/nvidia340,all ( all pour tout les pilotes)</li>
 			<li class="opt">-e <span>&lt;desk_env&gt;</span></li>
-			<li>Environnement de bureau parmi plasma,lxqt,xfce,lxde,mate,gnome</li>
+			<li style="list-style:none">Environnement de bureau parmi plasma,lxqt,xfce,lxde,mate,gnome</li>
 			<li class="opt">-h <span>&lt;hostname&gt;</span></li>
-			<li>Nom de la machine</li>
+			<li style="list-style:none">Nom de la machine</li>
 			<li class="opt">-u <span>&lt;username&gt;</span></li>
-			<li>Login utilisateur</li>
-			
+			<li style="list-style:none">Login utilisateur</li>			
 			<!-- Langage/Location options-->
 			<li class="opt">-k <span>&lt;kbd_conf&gt;</span></li>
-			<li>Disposition du clavier en console</li>
+			<li style="list-style:none">Disposition du clavier en console</li>
 			<li class="opt">-K <span>&lt;xkbd_conf&gt;</span></li>
-			<li>Disposition du clavier sous X</li>
+			<li style="list-style:none">Disposition du clavier sous X</li>
 			<li class="opt">-z <span>&lt;Zone/SousZone&gt;</span></li>
-			<li>Fuseau horaire &agrave; suivre</li>
-			
+			<li style="list-style:none">Fuseau horaire &agrave; suivre</li>			
 			<!-- Advanced -->
 			<li class="opt">-l <span>&lt;/dev/sdX&gt;</span></li>
-			<li>Installe le chargeur de d&eacute;marrage grub sur le p&eacute;ripherique /dev/sdX.</li>
+			<li style="list-style:none">Installe le chargeur de d&eacute;marrage grub sur le p&eacute;ripherique /dev/sdX.</li>
 			<li class="opt"> -c <span>&lt;cache_paquets&gt;</span></li>
-			<li>Utilisation des paquets contenu dans le dossier &lt;cache_paquets&gt;</li>
-			
+			<li style="list-style:none">Utilisation des paquets contenu dans le dossier &lt;cache_paquets&gt;</li>			
 			<!-- Other (Printing, Bluetooth, usefull softwares)-->
 			<li class="opt">-p</li>
-			<li>Gestion imprimante ( cups )</li>
+			<li style="list-style:none">Gestion imprimante ( cups )</li>
 			<li class="opt">-H</li>
-			<li>Gestion imprimante HP ( cups + hplip )</li>
+			<li style="list-style:none">Gestion imprimante HP ( cups + hplip )</li>
 			<li class="opt">-b</li>
-			<li>Gestion du bluetooth ( bluez bluez-utils )</li>
+			<li style="list-style:none">Gestion du bluetooth ( bluez bluez-utils )</li>
 			<li class="opt">-L</li>
-			<li>Installation de libreoffice</li>
+			<li style="list-style:none">Installation de libreoffice</li>
 			<li class="opt">-T</li>
-			<li>Installation de thunderbird</li>
-			
+			<li style="list-style:none">Installation de thunderbird</li>			
 			<li class="opt"><br />-t</li>
-			<li>Test mode, commands are in /tmp/anarchi_command</li>
+			<li style="list-style:none">Test mode, commands are in /tmp/anarchi_command</li>
 			<li class="opt">-h</li>
-			<li>Print this help message</li>
+			<li style="list-style:none">Print this help message</li>
 		</ul>
 		
 		</li>
