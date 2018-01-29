@@ -58,11 +58,13 @@ chroot_setup() {
 	
 	[[ "${NEW_ROOT:${#NEW_ROOT}-1}" == "/"  ]] && NEW_ROOT="${NEW_ROOT:0:${#NEW_ROOT}-1}"
 	mount_setup "$@"
-	[[ "$CACHE_PAQUET" != ""  ]] && chroot_add_mount "$CACHE_PAQUET" "$1$DEFAULT_CACHE_PKG" -t none -o bind || return 0
+	# WTF ???
+# 	[[ "$CACHE_PAQUET" != ""  ]] && chroot_add_mount "$CACHE_PAQUET" "$1$DEFAULT_CACHE_PKG" -t none -o bind || return 0
+	[[ "$CACHE_PAQUET" != ""  ]] && chroot_add_mount "$CACHE_PAQUET" "$1$DEFAULT_CACHE_PKG" -t none -o bind
 	chroot_maybe_add_mount "! mountpoint -q '$TMP_ROOT$ROOT_DIR_BOOTSTRAP'" "$NEW_ROOT" "$TMP_ROOT$ROOT_DIR_BOOTSTRAP" -t none -o bind &&
 	chroot_setup_others
 	[[ -e $NAME_SCRIPT2CALL ]] && [[ ! -e "$1$WORK_DIR" ]] && mkdir -p $1$WORK_DIR 
-	[[ -e $NAME_SCRIPT2CALL ]] && cp -R {$NAME_SCRIPT2CALL,files} $1$WORK_DIR/
+	[[ -e $NAME_SCRIPT2CALL ]] && cp -R {$NAME_SCRIPT2CALL,files} $1$WORK_DIR/ 
 }
 
 recup_files () {
@@ -77,6 +79,7 @@ desktop_environnement () {
 	# TODO Verifier si [[ -e files/de/$DE.conf  ]] est utile...
 	LIST_SOFT="$( [[ -e files/de/$DE.conf  ]] && recup_files files/de/$DE.conf && printf " " && recup_files files/de/common.conf )"
 	LIST_YAOURT="$( recup_files files/de/yaourt.conf )"
+# 	bash
 	echo $SYSTD > $TMPROOT$WORK_DIR/files/systemd.conf
 	echo $LIST_SOFT > $TMPROOT$WORK_DIR/files/de/common.conf
 	echo $LIST_YAOURT > $TMPROOT$WORK_DIR/files/de/yaourt.conf
@@ -170,6 +173,7 @@ echo -e "#\n#\n# Anarchi (From non based Arch ) ($(date "+%Y/%m/%d-%H:%M:%S"))\n
 declare -A to_mount
 
 is_root "$@" 
+
 chroot_setup "$TMPROOT" "$OLDROOT"  || die "$_failed_prepare_chroot" "$TMPROOT"
 set_lang_chroot "$TMPROOT" 1 >> /dev/null &
 
@@ -187,6 +191,7 @@ desktop_environnement "$5"
 
 # On copie les fichier dans le 
 [[ "$WIFI_NETWORK" != "" ]] && conf_net_wifi "$WIFI_NETWORK" && cp /tmp/$NET_CON files/
+arch_chroot "$OLDROOT" "/bin/bash"
 arch_chroot "$TMPROOT" "$COMMAND4ARCH"
 PID_COM=$?
 
