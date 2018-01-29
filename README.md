@@ -29,9 +29,8 @@ chose du type :
 		<li>Tout comme pacstrap ,on peut ajouter des logiciels particulier en ajoutant les noms des paquets &agrave; la fin de la ligne de 
 commande.<br />
 		Par exemple pour GIMP et STEAM
-	<code>
 \# /path/to/the/script/launchinstall.sh en_GB /path/to/install gimp steam
-	</code>
+
 		
 		</li>
 		<li>Tout les autres param&egrave;tre peuvent être pass&eacute; de mani&egrave;re al&eacute;atoire
