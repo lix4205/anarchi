@@ -49,6 +49,7 @@ syst&egrave;me seront pos&eacute;es. <br />
 			<li><strong>-u </strong><span>&lt;username&gt;</span><br />
 			Login utilisateur</li>			
 			<!-- Langage/Location options-->
+			<li></li>
 			<li><strong>-k </strong><span>&lt;kbd_conf&gt;</span><br />
 			Disposition du clavier en console</li>
 			<li><strong>-K </strong><span>&lt;xkbd_conf&gt;</span><br />
@@ -56,11 +57,13 @@ syst&egrave;me seront pos&eacute;es. <br />
 			<li><strong>-z </strong><span>&lt;Zone/SousZone&gt;</span><br />
 			Fuseau horaire &agrave; suivre</li>			
 			<!-- Advanced -->
+			<li></li>
 			<li><strong>-l </strong><span>&lt;/dev/sdX&gt;</span><br />
 			Installe le chargeur de d&eacute;marrage grub sur le p&eacute;ripherique /dev/sdX.</li>
 			<li><strong> -c </strong><span>&lt;cache_paquets&gt;</span><br />
 			Utilisation des paquets contenu dans le dossier &lt;cache_paquets&gt;</li>			
 			<!-- Other (Printing, Bluetooth, usefull softwares)-->
+			<li></li>
 			<li><strong>-p</strong><br />
 			Gestion imprimante ( cups )</li>
 			<li><strong>-H</strong><br />
@@ -70,7 +73,8 @@ syst&egrave;me seront pos&eacute;es. <br />
 			<li><strong>-L</strong><br />
 			Installation de libreoffice</li>
 			<li><strong>-T</strong><br />
-			Installation de thunderbird</li>			
+			Installation de thunderbird</li>
+			<li></li>
 			<li><strong>-t</strong><br />
 			Test mode, commands are in /tmp/anarchi_command</li>
 			<li><strong>-h</strong><br />
