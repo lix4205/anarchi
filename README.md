@@ -1,7 +1,7 @@
 # anarchi
 Ce script est destin&eacute; &agrave; installer la distribution ArchLinux avec un environnement de bureau minimal dans le cadre d'une 
 utilisation basique ( Bureautique, Web/Mail, Multimedia ).
-<br />Il a &eacute;t&eacute; conçu afin d'installer ArchLinux depuis un syst&egrave;me d&eacute;j&agrave; op&eacute;rationnel, type LiveCD. Fonctionne sur ArchLinux, Debian et ses dérivées, et probablement la plupart des distributions...
+<br />Il a &eacute;t&eacute; conçu afin d'installer ArchLinux depuis un syst&egrave;me d&eacute;j&agrave; op&eacute;rationnel, type LiveCD.<br />Fonctionne sur ArchLinux, Debian et ses dérivées, et probablement la plupart des distributions...
 <br />
 <br /> Ce script peut aussi effectuer une installation sans disque destin&eacute;e &agrave; être boot&eacute;e en r&eacute;seau ( 
 param&egrave;tre "-n nfsroot" )...
@@ -10,7 +10,7 @@ ATTENTION : On part du principe que la partition de notre future installation es
 Hormis pour une installation sans disque... )<br />
 Il s'agit ensuite de lancer le script avec<br />
 <code>
-\# /path/to/the/script/launchinstall.sh /path/to/install
+# /path/to/the/script/launchinstall.sh /path/to/install
 </code><br />
 Un seul param&egrave;tre est requis, le dossier dans lequel installer.<br />
 <strong>Remarque: </strong>Dans cet exemple, aucun chargeur de d&eacute;marrage ne sera install&eacute; !<br />
@@ -18,7 +18,7 @@ Si aucun param&egrave;tre n'a &eacute;t&eacute; pass&eacute;, une s&eacute;rie d
 syst&egrave;me seront pos&eacute;es. <br />
 Toutefois vous pouvez passez les param&egrave;tres directement, voici une rapide description :
 <ul class="opts_list">
-    <li>Le premier param&egrave;tre &agrave; passer est la LOCALE (UTF-8 uniquement) utilis&eacute;e par le syst&egrave;me donc quelque chose du type : <br /><code>\# /path/to/the/script/launchinstall.sh en_GB /path/to/install </code></li>
+    <li>Le premier param&egrave;tre &agrave; passer est la LOCALE (UTF-8 uniquement) utilis&eacute;e par le syst&egrave;me donc quelque chose du type : <br /><code># /path/to/the/script/launchinstall.sh en_GB /path/to/install </code></li>
     <li>Tout comme pacstrap ,on peut ajouter des logiciels particulier en ajoutant les noms des paquets &agrave; la fin de la ligne de commande.<br />Par exemple pour GIMP et STEAM<br /><code>\# /path/to/the/script/launchinstall.sh en_GB /path/to/install gimp steam</code></li>
     <li>Tout les autres param&egrave;tre peuvent être pass&eacute; de mani&egrave;re al&eacute;atoire
     <ul class="opts_list">
