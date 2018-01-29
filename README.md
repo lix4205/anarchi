@@ -23,7 +23,6 @@ Toutefois vous pouvez passez les param&egrave;tres directement, voici une rapide
 <li>Tout comme pacstrap ,on peut ajouter des logiciels particulier en ajoutant les noms des paquets &agrave; la fin de la ligne de commande.<br />Par exemple pour GIMP et STEAM<br /><code>\# /path/to/the/script/launchinstall.sh en_GB /path/to/install gimp steam</code></li>
 <li>Tout les autres param&egrave;tre peuvent être pass&eacute; de mani&egrave;re al&eacute;atoire
 <ul class="opts_list">
-<!-- Pacstrap options -->
 <li><strong>-C </strong><span>&lt;config&gt;</span><br />
 Use an alternate config file for pacman</li>
 <li><strong>-d</strong><br />
@@ -34,7 +33,6 @@ Avoid copying the host's pacman keyring to the target</li>
 Avoid auto-confirmation of package selections</li>
 <li><strong>-M</strong><br />
 Avoid copying the host's mirrorlist to the target<br /><br /></li>
-<!-- Common options-->
 <li><strong>-a </strong><span>&lt;arch&gt;</span><br />
 Architecture du processeur (x64/i686)</li>
 <li><strong>-n </strong><span>&lt;net_pref&gt;</span><br />
@@ -48,19 +46,16 @@ Environnement de bureau parmi plasma,lxqt,xfce,lxde,mate,gnome</li>
 Nom de la machine</li>
 <li><strong>-u </strong><span>&lt;username&gt;</span><br />
 Login utilisateur<br /><br /></li>			
-<!-- Langage/Location options-->
 <li><strong>-k </strong><span>&lt;kbd_conf&gt;</span><br />
 Disposition du clavier en console</li>
 <li><strong>-K </strong><span>&lt;xkbd_conf&gt;</span><br />
 Disposition du clavier sous X</li>
 <li><strong>-z </strong><span>&lt;Zone/SousZone&gt;</span><br />
 Fuseau horaire &agrave; suivre<br /><br /></li>			
-<!-- Advanced -->
 <li><strong>-l </strong><span>&lt;/dev/sdX&gt;</span><br />
 Installe le chargeur de d&eacute;marrage grub sur le p&eacute;ripherique /dev/sdX.</li>
 <li><strong> -c </strong><span>&lt;cache_paquets&gt;</span><br />
 Utilisation des paquets contenu dans le dossier &lt;cache_paquets&gt;<br /><br /></li>			
-<!-- Other (Printing, Bluetooth, usefull softwares)-->
 <li><strong>-p</strong><br />
 Gestion imprimante ( cups )</li>
 <li><strong>-H</strong><br />
