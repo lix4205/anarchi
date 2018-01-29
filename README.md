@@ -6,8 +6,6 @@ de page pour les distributions support&eacute;es... )
 <br />
 <br /> Ce script peut aussi effectuer une installation sans disque destin&eacute;e &agrave; être boot&eacute;e en r&eacute;seau ( 
 param&egrave;tre "-n nfsroot" )...
-# Distributions supportées.
-Debian, Linux Mint, Ubuntu
 # Fonctionnement
 ATTENTION : On part du principe que la partition de notre future installation est format&eacute;e et mont&eacute;e sur le syst&egrave;me hôte ! ( 
 Hormis pour une installation sans disque... )<br />
@@ -80,5 +78,6 @@ Toutefois vous pouvez passez les param&egrave;tres directement, voici une rapide
     </ul>
     </li>
 </ul>
-
+# Distributions supportées.
+Debian, Linux Mint, Ubuntu<br />
 //<strong>AVERTISSEMENT</strong> : Il y a un probleme avec ces distributions, ca mange trop de RAM...
