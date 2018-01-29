@@ -22,7 +22,7 @@ syst&egrave;me seront pos&eacute;es. <br />
 		<li>Le premier param&egrave;tre &agrave; passer est la LOCALE (UTF-8 uniquement) utilis&eacute;e par le syst&egrave;me donc quelque 
 chose du type :
 	<code>
-# /path/to/the/script/launchinstall.sh en_GB /path/to/install
+\# /path/to/the/script/launchinstall.sh en_GB /path/to/install
 	</code>
 		
 		</li>
@@ -30,7 +30,7 @@ chose du type :
 commande.<br />
 		Par exemple pour GIMP et STEAM
 	<code>
-# /path/to/the/script/launchinstall.sh en_GB /path/to/install gimp steam
+\# /path/to/the/script/launchinstall.sh en_GB /path/to/install gimp steam
 	</code>
 		
 		</li>
