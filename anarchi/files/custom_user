@@ -199,13 +199,13 @@ esac
 # BEGIN lix CONFIG
 if [[ -e "$CUSTOM_USER_SCRIPT" ]]; then
     source "$CUSTOM_USER_SCRIPT"
-    if [[ -e $DIR_USR_CONF/$NAME_USER ]]; then
-        su $NAME_USER -c "bash /tmp/files/extras/copyconf.sh \"$DIR_USR_CONF/$NAME_USER\" $NAME_USER $DE" 
-        su - $NAME_USER -c "cp -PR $DIR_USR_CONF/$NAME_USER/* ."
-    else
-        su $NAME_USER -c "bash /tmp/files/extras/copyconf.sh \"$DIR_USR_CONF/$DEFAULT_USER\" $NAME_USER $DE"; 
-        su - $NAME_USER -c "cp -PR $DIR_USR_CONF/$DEFAULT_USER/* ."
-    fi
+fi
+if [[ -e $DIR_USR_CONF/$NAME_USER ]]; then
+    su $NAME_USER -c "bash /tmp/files/extras/copyconf.sh \"$DIR_USR_CONF/$NAME_USER\" $NAME_USER $DE" 
+    su - $NAME_USER -c "cp -PR $DIR_USR_CONF/$NAME_USER/* ."
+elif [[ -e $DIR_USR_CONF/$DEFAULT_USER ]]; then 
+    su $NAME_USER -c "bash /tmp/files/extras/copyconf.sh \"$DIR_USR_CONF/$DEFAULT_USER\" $NAME_USER $DE"; 
+    su - $NAME_USER -c "cp -PR $DIR_USR_CONF/$DEFAULT_USER/* ."
 fi
 
 # END
@@ -215,8 +215,7 @@ fi
 su $NAME_USER -c "echo -e \"# Some aliases\\nalias lsl=\\\"ls -l\\\"\nalias lsa=\\\"ls -a\\\" \" >> /home/$NAME_USER/.bashrc"
 
 # On force le démontager du partage
-until ! mountpoint -q $DIR_SRV; do
-        
+until ! mountpoint -q $DIR_SRV; do        
         umount $DIR_SRV >> /dev/null 2>&1
         sleep 0.5
 done

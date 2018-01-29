@@ -19,9 +19,9 @@ FILE_COMMANDS="/tmp/anarchi_command"
 if [[ "$DIR_SCRIPTS" != "$WORK_DIR" ]]; then
 	mkdir -p $WORK_DIR 
 	cp -RfL "$DIR_SCRIPTS"/{$NAME_SCRIPT2CALL,$NAME_SCRIPT,files} $WORK_DIR || echo "==> ERROR: Copy failed !"
-	[[ ! -e $WORK_DIR/files/anarchi ]] && ln -fs  "$DIR_SCRIPTS" $WORK_DIR/files/anarchi
-	cp -R "$DIR_SCRIPTS/../tools" $WORK_DIR/files/
+	cp -R "$DIR_SCRIPTS/tool" $WORK_DIR/files/
 	cp -R "$DIR_SCRIPTS/../extras" $WORK_DIR/files/
+	rm "$WORK_DIR/files/extras/tools"
 # 	cp -a "$DIR_SCRIPTS/../confs" $WORK_DIR/files/
 # 	cp -Rf "$DIR_SCRIPTS/../imgs" $WORK_DIR/files/
 # 	( cd "$WORK_DIR/files"; rm imgs bgs; ln -sf extras/imgs . && ln -sf imgs bgs )
@@ -120,10 +120,8 @@ notinarch_function() {
 	[[ ! -e "$ROOT_BOOTSTRAP$ROOT_DIR_BOOTSTRAP" ]] && mkdir $ROOT_BOOTSTRAP$ROOT_DIR_BOOTSTRAP
 	
 	msg_nn "$_prepare_chroot..."
-	[[ -e $DIR_SCRIPTS/files/anarchi ]] && rm $DIR_SCRIPTS/files/anarchi
-	bash
 	cp -RfL $DIR_SCRIPTS/{$NAME_SCRIPT2CALL,files} $WORK_DIR_BOOTSTRAP/ || die "$_install_copie"
-	ln -fs  "$DIR_SCRIPTS" $WORK_DIR_BOOTSTRAP/files/anarchi
+# 	ln -fs  "$DIR_SCRIPTS" $WORK_DIR_BOOTSTRAP/files/anarchi
 	# Décommenter un seul serveur
 # 	sed -i "s/#Server = $MIRROR/Server = $MIRROR/g" root.$UNAMEM/etc/pacman.d/mirrorlist
 	# Décommenter tout les serveurs

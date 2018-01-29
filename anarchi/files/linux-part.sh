@@ -185,7 +185,7 @@ cp files/pacman.conf.$ARCH $OLDROOT/pacman.conf.$ARCH
 mkdir -m 0755 -p $OLDROOT$DEFAULT_CACHE_PKG
 [[ -e $FILE2SOURCE*.conf ]] && cp $FILE2SOURCE*.conf $TMPROOT/tmp/
 
-ls /tmp/ | grep -q done.anarchi* && cp /tmp/done.anarchi* $TMPROOT/tmp/
+ls /tmp/done | grep -q done.anarchi* && cp -R /tmp/done $TMPROOT/tmp/
 
 desktop_environnement "$5"
 
@@ -195,7 +195,7 @@ desktop_environnement "$5"
 arch_chroot "$TMPROOT" "$COMMAND4ARCH"
 PID_COM=$?
 
-ls $TMPROOT/tmp | grep -q done.anarchi* && cp $TMPROOT/tmp/done.anarchi* /tmp/
+ls $TMPROOT/tmp/done | grep -q done.anarchi* && cp -R $TMPROOT/tmp/done /tmp/
 
 [[ -e $TMPROOT/tmp/anarchi_command ]] && cat $TMPROOT/tmp/anarchi_command >> /tmp/anarchi_command
 if [[ $PID_COM -eq 0 ]]; then
