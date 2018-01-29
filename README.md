@@ -75,6 +75,7 @@ Toutefois vous pouvez passez les param&egrave;tres directement, voici une rapide
     </ul>
     </li>
 </ul>	
-# Exemple
+
+# Exemple
 Ce qui nous donne pour une distribution <strong>x64</strong>, avec <strong>NetworkManager</strong> pour le r&eacute;seau, <strong>intel</strong> comme driver graphique, l'environnement de bureau <strong>xfce</strong>, un utilisateur <strong>user</strong>, <strong>hostname</strong> comme nom de machine, Grub sur le disque <strong>/dev/sdf</strong>, la gestion des imprimantes avec <strong>cups</strong>, <strong>libreoffice</strong> et <strong>thunderbird</strong> ainsi que <strong>gimp</strong> et <strong>steam</strong>. Le tout en <strong>anglais britanique</strong> :
 <code># /path/to/the/script/launchinstall.sh en_GB.UTF-8 -K gb -k uk -z Europe/London -a x64 -n nm -g intel  -e xfce -h hostname -u user -l /dev/sdf -p -TL /path/to/install gimp steam</code>
