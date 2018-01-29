@@ -24,56 +24,56 @@ syst&egrave;me seront pos&eacute;es. <br />
 		<li>Tout les autres param&egrave;tre peuvent être pass&eacute; de mani&egrave;re al&eacute;atoire
 		<ul class="opts_list">
 			<!-- Pacstrap options -->
-			<li class="opt">-C <span>&lt;config&gt;</span><br />
+			<li><strong>-C </strong><span>&lt;config&gt;</span><br />
 			Use an alternate config file for pacman</li>
-			<li class="opt">-d<br />
+			<li><strong>-d</strong><br />
 			Allow installation to a non-mountpoint directory</li>
-			<li class="opt">-G<br />
+			<li><strong>-G</strong><br />
 			Avoid copying the host's pacman keyring to the target</li>
-			<li class="opt">-i<br />
+			<li><strong>-i</strong><br />
 			Avoid auto-confirmation of package selections</li>
-			<li class="opt">-M<br />
+			<li><strong>-M</strong><br />
 			Avoid copying the host's mirrorlist to the target</li>
 			<!-- Common options-->
-			<li class="opt">-a <span>&lt;arch&gt;</span><br />
+			<li><strong>-a </strong><span>&lt;arch&gt;</span><br />
 			Architecture du processeur (x64/i686)</li>
-			<li class="opt">-n <span>&lt;net_pref&gt;</span><br />
+			<li><strong>-n </strong><span>&lt;net_pref&gt;</span><br />
 			Au choix: dhcpcd/dhcpcd@&lt;inet_addr&gt;,nm/networmanager<br>
 			Utilisation de NetworkManager ou dhcpcd sur toutes les interfaces ou avec l'interface &lt;inet_addr&gt;</li>
-			<li class="opt">-g <span>&lt;gpu_drv&gt;</span><br />
+			<li><strong>-g </strong><span>&lt;gpu_drv&gt;</span><br />
 			Pilote carte graphique parmi intel,nouveau,radeon/ati,virtualbox/vb,nvidia/nvidia304/nvidia340,all ( all pour tout les pilotes)</li>
-			<li class="opt">-e <span>&lt;desk_env&gt;</span><br />
+			<li><strong>-e </strong><span>&lt;desk_env&gt;</span><br />
 			Environnement de bureau parmi plasma,lxqt,xfce,lxde,mate,gnome</li>
-			<li class="opt">-h <span>&lt;hostname&gt;</span><br />
+			<li><strong>-h </strong><span>&lt;hostname&gt;</span><br />
 			Nom de la machine</li>
-			<li class="opt">-u <span>&lt;username&gt;</span><br />
+			<li><strong>-u </strong><span>&lt;username&gt;</span><br />
 			Login utilisateur</li>			
 			<!-- Langage/Location options-->
-			<li class="opt">-k <span>&lt;kbd_conf&gt;</span><br />
+			<li><strong>-k </strong><span>&lt;kbd_conf&gt;</span><br />
 			Disposition du clavier en console</li>
-			<li class="opt">-K <span>&lt;xkbd_conf&gt;</span><br />
+			<li><strong>-K </strong><span>&lt;xkbd_conf&gt;</span><br />
 			Disposition du clavier sous X</li>
-			<li class="opt">-z <span>&lt;Zone/SousZone&gt;</span><br />
+			<li><strong>-z </strong><span>&lt;Zone/SousZone&gt;</span><br />
 			Fuseau horaire &agrave; suivre</li>			
 			<!-- Advanced -->
-			<li class="opt">-l <span>&lt;/dev/sdX&gt;</span><br />
+			<li><strong>-l </strong><span>&lt;/dev/sdX&gt;</span><br />
 			Installe le chargeur de d&eacute;marrage grub sur le p&eacute;ripherique /dev/sdX.</li>
-			<li class="opt"> -c <span>&lt;cache_paquets&gt;</span><br />
+			<li><strong> -c </strong><span>&lt;cache_paquets&gt;</span><br />
 			Utilisation des paquets contenu dans le dossier &lt;cache_paquets&gt;</li>			
 			<!-- Other (Printing, Bluetooth, usefull softwares)-->
-			<li class="opt">-p<br />
+			<li><strong>-p</strong><br />
 			Gestion imprimante ( cups )</li>
-			<li class="opt">-H<br />
+			<li><strong>-H</strong><br />
 			Gestion imprimante HP ( cups + hplip )</li>
-			<li class="opt">-b<br />
+			<li><strong>-b</strong><br />
 			Gestion du bluetooth ( bluez bluez-utils )</li>
-			<li class="opt">-L<br />
+			<li><strong>-L</strong><br />
 			Installation de libreoffice</li>
-			<li class="opt">-T<br />
+			<li><strong>-T</strong><br />
 			Installation de thunderbird</li>			
-			<li class="opt">-t<br />
+			<li><strong>-t</strong><br />
 			Test mode, commands are in /tmp/anarchi_command</li>
-			<li class="opt">-h<br />
+			<li><strong>-h</strong><br />
 			Print this help message</li>
 		</ul>
 		
