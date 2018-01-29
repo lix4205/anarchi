@@ -93,6 +93,7 @@
 
 
 # Vous pouvez ajouter des commandes à la fin du fichier files/custom_user pour personnaliser l'installation
+# Et copier un script de personnalisation du nom de votre utilisateur dans le dossier anarchi/files/custom.d/
 
 #
 # Distributions supportées ( je n'ai récemment essayé que sur LinuxMint mais ca devrait le faire avec les autres.. )

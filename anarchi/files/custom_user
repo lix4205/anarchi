@@ -147,15 +147,15 @@ echo -e "Section \"InputClass\"\n\tIdentifier \"system-keyboard\"\n\tMatchIsKeyb
 # END
 
 # BEGIN configurations by the desktop-environnement
-		echo -n "==> Installation de "
+# 		echo -n "==> Installation de "
 case $DE in
 	plasma)
-		echo -n "yakuake"
+		echo -n "==> Installation de yakuake"
 		$pacman -Sy --noconfirm --needed yakuake >> $LOG_EXE 2>&1 && echo "...ok" || echo -e "...echec !\n==> Consultez $LOG_EXE  pour plus de détail"
 	;;
 	# Cinnamon has tilda as terminal
 	mate|xfce|gnome) 
-		echo -n "tilda"
+		echo -n "==> Installation de tilda"
 		$pacman -Sy --noconfirm --needed tilda >> $LOG_EXE 2>&1 && echo "...ok" || echo -e "...echec !\n==> Consultez $LOG_EXE  pour plus de détail"
 	;;
 	lxqt) : ;;

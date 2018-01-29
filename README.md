@@ -1,9 +1,8 @@
 # anarchi
-Ce script est destin&eacute; &agrave; installer la distribution ArchLinux avec un environnement de bureau minimal dans le cadre d'une 
-utilisation basique ( Bureautique, Web/Mail, Multimedia ).
+Ce script est destin&eacute; &agrave; installer la distribution ArchLinux avec un environnement de bureau minimal ( Web, Multimedia ).
 <br />Il a &eacute;t&eacute; conçu afin d'installer ArchLinux depuis un syst&egrave;me d&eacute;j&agrave; op&eacute;rationnel, type LiveCD.<br />Fonctionne sur ArchLinux, Debian et ses dérivées, et probablement la plupart des distributions...
-<br />
-<br /> Ce script peut aussi effectuer une installation sans disque destin&eacute;e &agrave; être boot&eacute;e en r&eacute;seau ( 
+<br />On peut aussi placer un script du nom de l'utilisateur dans "anarchi/files/custom.d" afin de personnaliser votre environnement post-installation.
+<br />Ce script peut aussi effectuer une installation sans disque destin&eacute;e &agrave; être boot&eacute;e en r&eacute;seau ( 
 param&egrave;tre "-n nfsroot" )...
 # Fonctionnement
 ATTENTION : On part du principe que la partition de notre future installation est format&eacute;e et mont&eacute;e sur le syst&egrave;me hôte ! ( 
@@ -58,6 +57,8 @@ Toutefois vous pouvez passez les param&egrave;tres directement, voici une rapide
         <li><strong> -c </strong><span>&lt;cache_paquets&gt;</span><br />
         Utilisation des paquets contenu dans le dossier &lt;cache_paquets&gt;<br /><br /></li>			
         <!-- Other (Printing, Bluetooth, usefull softwares)-->
+        <li><strong>-s </strong>Gestion touchpad (xf86-input-synaptics)<br />
+        Disposition du clavier en console</li>
         <li><strong>-p</strong><br />
         Gestion imprimante ( cups )</li>
         <li><strong>-H</strong><br />
