@@ -21,9 +21,7 @@ syst&egrave;me seront pos&eacute;es. <br />
 	<ul class="opts_list">
 		<li>Le premier param&egrave;tre &agrave; passer est la LOCALE (UTF-8 uniquement) utilis&eacute;e par le syst&egrave;me donc quelque 
 chose du type :
-	<code>
 \# /path/to/the/script/launchinstall.sh en_GB /path/to/install
-	</code>
 		
 		</li>
 		<li>Tout comme pacstrap ,on peut ajouter des logiciels particulier en ajoutant les noms des paquets &agrave; la fin de la ligne de 
