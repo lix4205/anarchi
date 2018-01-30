@@ -1036,7 +1036,7 @@ rid_exit "$_continue"
 msg_n "32" "$_go_on"
 run_or_su "${COMMAND2LAUNCH}"
 FIN=$?
-msg_n "$FIN"
+# msg_n "$FIN"
 # "
 # Fin is set in linux-part.sh
 [[ ! -z $PID_COM ]] && FIN=$PID_COM
