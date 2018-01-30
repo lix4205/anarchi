@@ -37,6 +37,7 @@
 # Vous pouvez decommentez certaines parties et les modifier à votre gré :
 # - Monter un partage nfs et l'inscrire dans /etc/fstab ***
 # - *** IMPORTANT ! Decommentez aussi la ligne concernant le demontage en fin de fichier 
+# - Ajouter un fichier configurant le clavier pour tuer le serveur X avec ctrl+alt+backspace 
 # - Copier des fichiers de configurations particuliers depuis le serveur NFS
 # - Installer des logiciels selon l'environnement de bureau installé
 
@@ -123,6 +124,10 @@ session   include   system-login" > "/etc/pam.d/nodm"
 esac
 # END
 
+# BEGIN X11 KEYBOARD CONFIG ( Ctrl + Alt + backspace kill xserver)
+# It's for a french keyboard ! Remove latin9 !!!
+# echo -e "Section \"InputClass\"\n\tIdentifier \"system-keyboard\"\n\tMatchIsKeyboard \"on\"\n\tOption \"XkbLayout\" \"${X11_KEYMAP}\"\n\tOption \"XkbModel\" \"pc105\"\n\tOption \"XkbVariant\" \"latin9\"\n\tOption \"XkbOptions\" \"terminate:ctrl_alt_bksp\"\nEndSection" > /etc/X11/xorg.conf.d/00-keyboard.conf
+# END
 
 # # BEGIN Serveur NFS 
 # # Va inscrire dans fstab la ligne correspondant au montage permanent du partage NFS
