@@ -37,7 +37,7 @@
 # Vous pouvez decommentez certaines parties et les modifier à votre gré :
 # - Monter un partage nfs et l'inscrire dans /etc/fstab ***
 # - *** IMPORTANT ! Decommentez aussi la ligne concernant le demontage en fin de fichier 
-# - Ajouter un fichier configurant le clavier pour tuer le serveur X avec ctrl+alt+backspace 
+# - Ajouter un fichier configurant le clavier pour tuer le serveur X avec ctrl+alt+backspace et force le codage clavier en francais pour X11
 # - Copier des fichiers de configurations particuliers depuis le serveur NFS
 # - Installer des logiciels selon l'environnement de bureau installé
 
@@ -147,7 +147,7 @@ esac
 # echo "==> Wait while mounting $DIR_SRV" && 
 # mount $DIR_SRV
 # # END
-# 
+
 # # BEGIN Configuration utilisateur
 # # On va monter le partage NFS pour copier les configurations personalisées...
 # # Later, I'll copy my NAME_USER config from DIR_USR_CONF on my server...
