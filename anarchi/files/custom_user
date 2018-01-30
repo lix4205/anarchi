@@ -41,7 +41,6 @@ if [[ $DM == "lightdm" ]]; then
 fi
 # END
 
-
 # BEGIN GUI_EDITOR for edit pkgbuild in yaourt 
 # Used to complete xinitrc for slim and nodm
 declare -A binde=(
@@ -83,8 +82,6 @@ DIR_SRV=/media/srv
 IP_SRV="192.168.1.5"
 # Later, I'll copy my NAME_USER config from DIR_USR_CONF on my server...
 DIR_USR_CONF=$DIR_SRV/confs
-# DIR_USR_CONF=/tmp/files/confs
-# DIR_USR_CONF=$DIR_SRV/users
 # Default user conf
 DEFAULT_USER="lix"
 # Write in fstab
@@ -146,8 +143,6 @@ journalctl -fn 50
 journalctl -fn 50 -u $DM
 bash $DIR_SRV/scripts/arch-utils.sh
 mount $DIR_SRV/
-
-
 " > /root/.bash_history
 # # END .bash_history
 
