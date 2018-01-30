@@ -128,57 +128,57 @@ esac
 # # Va inscrire dans fstab la ligne correspondant au montage permanent du partage NFS
 # # avec x-systemd.automount,x-systemd.device-timeout=1s
 # # I use this directory to mount my NFS server...
-# DIR_SRV=/media/srv
-# # ...with this IP...
-# IP_SRV="192.168.1.5"
-# # Write in fstab
-# ! cat /etc/fstab | grep -q $IP_SRV && 
-# echo -e "# $IP_SRV:/ on $DIR_SRV\n$IP_SRV:/	$DIR_SRV	nfs    x-systemd.automount,x-systemd.device-timeout=1s   0 0" >> /etc/fstab
-# # Creation du repertoire
-# [[ ! -e /media/srv ]] && 
-# mkdir -p /media/{srv,tmp} && 
-# echo "==> Creating directories /media/{srv,tmp}"
-# # Et on monte pour les configurations
-# echo "==> Wait while mounting $DIR_SRV" && 
-# mount $DIR_SRV
+DIR_SRV=/media/srv
+# ...with this IP...
+IP_SRV="192.168.1.5"
+# Write in fstab
+! cat /etc/fstab | grep -q $IP_SRV && 
+echo -e "# $IP_SRV:/ on $DIR_SRV\n$IP_SRV:/	$DIR_SRV	nfs    x-systemd.automount,x-systemd.device-timeout=1s   0 0" >> /etc/fstab
+# Creation du repertoire
+[[ ! -e /media/srv ]] && 
+mkdir -p /media/{srv,tmp} && 
+echo "==> Creating directories /media/{srv,tmp}"
+# Et on monte pour les configurations
+echo "==> Wait while mounting $DIR_SRV" && 
+mount $DIR_SRV
 # # END
 # 
 # # BEGIN Configuration utilisateur
 # # On va monter le partage NFS pour copier les configurations personalisées...
 # # Later, I'll copy my NAME_USER config from DIR_USR_CONF on my server...
-# DIR_USR_CONF=$DIR_SRV/confs
-# # Default user conf
-# DEFAULT_USER="lix"
-# 
-# if [[ -e $DIR_USR_CONF/$NAME_USER ]]; then
-#     su $NAME_USER -c "bash /tmp/files/extras/copyconf.sh \"$DIR_USR_CONF/$NAME_USER\" $NAME_USER $DE" 
-#     su - $NAME_USER -c "cp -PR $DIR_USR_CONF/$NAME_USER/* ."
-# elif [[ -e $DIR_USR_CONF/$DEFAULT_USER ]]; then 
-#     su $NAME_USER -c "bash /tmp/files/extras/copyconf.sh \"$DIR_USR_CONF/$DEFAULT_USER\" $NAME_USER $DE"; 
-#     su - $NAME_USER -c "cp -PR $DIR_USR_CONF/$DEFAULT_USER/* ."
-# fi
-# 
-# [[ $? -eq 0 ]] && echo "==> La configuration de $NAME_USER à été créée !"
+DIR_USR_CONF=$DIR_SRV/confs
+# Default user conf
+DEFAULT_USER="lix"
+
+if [[ -e $DIR_USR_CONF/$NAME_USER ]]; then
+    su $NAME_USER -c "bash /tmp/files/extras/copyconf.sh \"$DIR_USR_CONF/$NAME_USER\" $NAME_USER $DE" 
+    su - $NAME_USER -c "cp -PR $DIR_USR_CONF/$NAME_USER/* ."
+elif [[ -e $DIR_USR_CONF/$DEFAULT_USER ]]; then 
+    su $NAME_USER -c "bash /tmp/files/extras/copyconf.sh \"$DIR_USR_CONF/$DEFAULT_USER\" $NAME_USER $DE"; 
+    su - $NAME_USER -c "cp -PR $DIR_USR_CONF/$DEFAULT_USER/* ."
+fi
+
+[[ $? -eq 0 ]] && echo "==> La configuration de $NAME_USER à été créée !"
 # # END
 
 
 # BEGIN configurations by the desktop-environnement
-# Ici quelques commandes pour installer des terminal type quake
-# case $DE in
-# 	plasma)
-# 		echo -n "==> Installation de yakuake"
-# 		$pacman -Sy --noconfirm --needed yakuake >> $LOG_EXE 2>&1 && echo "...ok" || echo -e "...echec !\n==> Consultez $LOG_EXE  pour plus de détail"
-# 	;;
-# 	# Cinnamon has tilda as terminal
-# 	mate|xfce|gnome) 
-# 		echo -n "==> Installation de tilda"
-# 		$pacman -Sy --noconfirm --needed tilda >> $LOG_EXE 2>&1 && echo "...ok" || echo -e "...echec !\n==> Consultez $LOG_EXE  pour plus de détail"
-# 	;;
-# 	lxqt) : ;;
-# 	fluxbox)
-# 		su $NAME_USER -c "echo \"exec startfluxbox\" > /home/$NAME_USER/.xinitrc" 
-#   ;;
-# esac
+# Ici quelques commandes pour installer yakuake sous kde ou tilda sur gtk
+case $DE in
+	plasma)
+		echo -n "==> Installation de yakuake"
+		$pacman -Sy --noconfirm --needed yakuake >> $LOG_EXE 2>&1 && echo "...ok" || echo -e "...echec !\n==> Consultez $LOG_EXE  pour plus de détail"
+	;;
+	# Cinnamon has tilda as terminal
+	mate|xfce|gnome) 
+		echo -n "==> Installation de tilda"
+		$pacman -Sy --noconfirm --needed tilda >> $LOG_EXE 2>&1 && echo "...ok" || echo -e "...echec !\n==> Consultez $LOG_EXE  pour plus de détail"
+	;;
+	lxqt) : ;;
+	fluxbox)
+		su $NAME_USER -c "echo \"exec startfluxbox\" > /home/$NAME_USER/.xinitrc" 
+  ;;
+esac
 # END
 
 # # Some aliases
@@ -186,13 +186,73 @@ esac
 
 # # BEGIN demontage du serveur
 # # On force le démontager du partage
-# until ! mountpoint -q $DIR_SRV; do        
-#         umount $DIR_SRV >> /dev/null 2>&1
-#         sleep 0.5
-# done
+until ! mountpoint -q $DIR_SRV; do        
+        umount $DIR_SRV >> /dev/null 2>&1
+        sleep 0.5
+done
+# # END 
 
 # # BEGIN execute files/custom.d/$NAME_USER
 if [[ -e "$CUSTOM_USER_SCRIPT" ]]; then
     source "$CUSTOM_USER_SCRIPT"
 fi
-# # END 
+# END
+
+
+# BEGIN ${dm_editor} is a tab which contains the editor list associated with the DE
+declare -A dm_editor=(
+	[e_plasma]="kate"
+	[e_gnome]="gedit"
+	[e_mate]="pluma"
+	[e_lxde]="leafpad"
+	[e_xfce]="mousepad"
+	[e_lxqt]="leafpad"
+# 	[e_fluxbox]="nano"
+)
+
+[[ -z ${dm_editor[e_$DE]} ]] && GUI_EDITOR="${dm_editor[e_$DE]}" &&
+sed -i "s/export VISUAL=.*/export VISUAL=\"\$(if [[ -n \$DISPLAY ]]; then echo '$GUI_EDITOR'; else echo 'nano'; fi)\"/" /home/*/.bashrc
+# END
+
+# # BEGIN fill .bash_history with usefull command for starting
+echo "
+systemctl stop $DM
+systemctl start $DM
+systemctl start $NAME_USER
+systemctl stop $NAME_USER
+systemctl start dux
+systemctl stop dux
+systemctl stop media-srv.automount
+systemctl daemon-reload
+systemctl poweroff
+systemctl reboot
+ip addr
+fdisk -l
+df -h
+du -h -d 1 .
+mount /dev/sda1 /media/tmp
+systemctl status $NFSROOT
+su - $NAME_USER
+modprobe -a vboxdrv vboxnetadp vboxnetflt vboxpci
+rmdir /var/cache/pacman/pkg/ && ln -s $DIR_SRV/packages/$ARCH/pkg/ /var/cache/pacman/
+mv /var/cache/pacman/pkg/* /media/srv/packages/x64/pkg/
+rm /var/cache/pacman/pkg/*
+ls -l /var/cache/pacman/pkg
+pacman -Syu
+journalctl -fn 50
+journalctl -fn 50 -u $DM
+bash $DIR_SRV/scripts/arch-utils.sh
+mount $DIR_SRV/
+
+
+" > /root/.bash_history
+# # END .bash_history
+
+echo "DIR_SRV=/media/srv
+DIR_SCR=\$DIR_SRV/scripts" >> /root/.bashrc
+
+# BEGIN X11 KEYBOARD CONFIG ( Ctrl + Alt + backspace kill xserver)
+# It's for a french keyboard ! Remove latin9 !!!
+echo -e "Section \"InputClass\"\n\tIdentifier \"system-keyboard\"\n\tMatchIsKeyboard \"on\"\n\tOption \"XkbLayout\" \"${X11_KEYMAP}\"\n\tOption \"XkbModel\" \"pc105\"\n\tOption \"XkbVariant\" \"latin9\"\n\tOption \"XkbOptions\" \"terminate:ctrl_alt_bksp\"\nEndSection" > /etc/X11/xorg.conf.d/00-keyboard.conf
+# END
+
