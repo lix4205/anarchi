@@ -7,6 +7,7 @@
 # english (US, South Africa),
 # portuguese (brazil), 
 # spanish ( Argentina, Chile ),
+# Arabic (A definir...)
 # chinese ( set to Simplified )
 # 
 # Sorry for the others, but give your arrays and I will add it...
@@ -439,6 +440,26 @@ declare -A soft_trans=(
 [ni_thunderbird]="es-es"
 [pa_thunderbird]="es-es"	
 
+[ae_thunderbird]="ar"
+[bh_thunderbird]="ar"
+[dz_thunderbird]="ar"
+[eg_thunderbird]="ar"
+[in_thunderbird]="ar"
+[iq_thunderbird]="ar"
+[jo_thunderbird]="ar"
+[kw_thunderbird]="ar"
+[lb_thunderbird]="ar"
+[ly_thunderbird]="ar"	
+[ma_thunderbird]="ar"
+[om_thunderbird]="ar"
+[qa_thunderbird]="ar"
+[sa_thunderbird]="ar"
+[sd_thunderbird]="ar"
+[ss_thunderbird]="ar"
+[sy_thunderbird]="ar"
+[tn_thunderbird]="ar"
+[ye_thunderbird]="ar"
+
 [za_firefox]="en-za"
 [us_firefox]="en-us"
 [gb_firefox]="en-gb"
@@ -460,7 +481,27 @@ declare -A soft_trans=(
 [gt_firefox]="es-es"
 [hn_firefox]="es-es"
 [ni_firefox]="es-es"
-[pa_firefox]="es-es"	
+[pa_firefox]="es-es"
+
+[ae_firefox]="ar"
+[bh_firefox]="ar"
+[dz_firefox]="ar"
+[eg_firefox]="ar"
+[in_firefox]="ar"
+[iq_firefox]="ar"
+[jo_firefox]="ar"
+[kw_firefox]="ar"
+[lb_firefox]="ar"
+[ly_firefox]="ar"	
+[ma_firefox]="ar"
+[om_firefox]="ar"
+[qa_firefox]="ar"
+[sa_firefox]="ar"
+[sd_firefox]="ar"
+[ss_firefox]="ar"
+[sy_firefox]="ar"
+[tn_firefox]="ar"
+[ye_firefox]="ar"
 
 [za_libreoffice]="en-ZA"
 [us_libreoffice]="en-GB"
@@ -485,6 +526,26 @@ declare -A soft_trans=(
 [ni_libreoffice]="es-es"
 [pa_libreoffice]="es-es"
 
+[ae_libreoffice]="ar"
+[bh_libreoffice]="ar"
+[dz_libreoffice]="ar"
+[eg_libreoffice]="ar"
+[in_libreoffice]="ar"
+[iq_libreoffice]="ar"
+[jo_libreoffice]="ar"
+[kw_libreoffice]="ar"
+[lb_libreoffice]="ar"
+[ly_libreoffice]="ar"	
+[ma_libreoffice]="ar"
+[om_libreoffice]="ar"
+[qa_libreoffice]="ar"
+[sa_libreoffice]="ar"
+[sd_libreoffice]="ar"
+[ss_libreoffice]="ar"
+[sy_libreoffice]="ar"
+[tn_libreoffice]="ar"
+[ye_libreoffice]="ar"
+
 [za_kde]="en_gb"
 [us_kde]="en_gb"
 [gb_kde]="en_gb"
@@ -505,7 +566,26 @@ declare -A soft_trans=(
 [hn_kde]="es"
 [ni_kde]="es"
 [pa_kde]="es"
-			
+		
+[ae_kde]="ar"
+[bh_kde]="ar"
+[dz_kde]="ar"
+[eg_kde]="ar"
+[in_kde]="ar"
+[iq_kde]="ar"
+[jo_kde]="ar"
+[kw_kde]="ar"
+[lb_kde]="ar"
+[ly_kde]="ar"	
+[ma_kde]="ar"
+[om_kde]="ar"
+[qa_kde]="ar"
+[sa_kde]="ar"
+[sd_kde]="ar"
+[ss_kde]="ar"
+[sy_kde]="ar"
+[tn_kde]="ar"
+[ye_kde]="ar"	
 			)
 # 			
 # 		trans_packages "firefox-l10n" "$LANG"
@@ -518,76 +598,76 @@ declare -A soft_trans=(
 # 		trans_packages "kde" "en_DK.UTF-8"
 # 	
 	
-	
-	mozilla_lang+=(
-			[mozilla_za]="en-za"
-			[mozilla_us]="en-us"
-			[mozilla_gb]="en-gb"
-			[mozilla_es]="es-es"			
-			[mozilla_pt]="pt-pt"
-			[mozilla_br]="pt-br"
-			[mozilla_cn]="zh-cn"
-			
-			[mozilla_mx]="es-mx"
-			[mozilla_ar]="es-ar"
-			[mozilla_cl]="es-cl"
-			
-			[mozilla_bo]="es-es"
-			[mozilla_cr]="es-es"
-			[mozilla_co]="es-es"
-			[mozilla_do]="es-es"
-			[mozilla_ec]="es-es"
-			[mozilla_es]="es-es"
-			[mozilla_gt]="es-es"
-			[mozilla_hn]="es-es"
-			[mozilla_ni]="es-es"
-			[mozilla_pa]="es-es"	
-		)
-# LibreOffice
-		libreoffice_lang+=(
-			[libreoffice_za]="en-ZA"
-			[libreoffice_us]="en-GB"
-			[libreoffice_gb]="en-GB"
-			[libreoffice_es]="es-es"
-			[libreoffice_pt]="pt-pt"
-			[libreoffice_br]="pt-BR"
-			[libreoffice_cn]="zh-CN"
-			
-			[libreoffice_mx]="es-mx"
-			[libreoffice_ar]="es-ar"
-			[libreoffice_cl]="es-cl"			
-			
-			[libreoffice_bo]="es-es"
-			[libreoffice_cr]="es-es"
-			[libreoffice_co]="es-es"
-			[libreoffice_do]="es-es"
-			[libreoffice_ec]="es-es"
-			[libreoffice_es]="es-es"
-			[libreoffice_gt]="es-es"
-			[libreoffice_hn]="es-es"
-			[libreoffice_ni]="es-es"
-			[libreoffice_pa]="es-es"			
-		)
-# PLasMA
-		kde_lang+=(
-			[kde_za]="en_gb"
-			[kde_us]="en_gb"
-			[kde_gb]="en_gb"
-			[kde_es]="es"
-			[kde_br]="pt_br"
-			[kde_cn]="zh_cn"
-			
-			[kde_bo]="es"
-			[kde_cr]="es"
-			[kde_co]="es"
-			[kde_do]="es"
-			[kde_ec]="es"
-			[kde_es]="es"
-			[kde_gt]="es"
-			[kde_hn]="es"
-			[kde_ni]="es"
-			[kde_pa]="es"
-		)      
+# 	
+# 	mozilla_lang+=(
+# 			[mozilla_za]="en-za"
+# 			[mozilla_us]="en-us"
+# 			[mozilla_gb]="en-gb"
+# 			[mozilla_es]="es-es"			
+# 			[mozilla_pt]="pt-pt"
+# 			[mozilla_br]="pt-br"
+# 			[mozilla_cn]="zh-cn"
+# 			
+# 			[mozilla_mx]="es-mx"
+# 			[mozilla_ar]="es-ar"
+# 			[mozilla_cl]="es-cl"
+# 			
+# 			[mozilla_bo]="es-es"
+# 			[mozilla_cr]="es-es"
+# 			[mozilla_co]="es-es"
+# 			[mozilla_do]="es-es"
+# 			[mozilla_ec]="es-es"
+# 			[mozilla_es]="es-es"
+# 			[mozilla_gt]="es-es"
+# 			[mozilla_hn]="es-es"
+# 			[mozilla_ni]="es-es"
+# 			[mozilla_pa]="es-es"	
+# 		)
+# # LibreOffice
+# 		libreoffice_lang+=(
+# 			[libreoffice_za]="en-ZA"
+# 			[libreoffice_us]="en-GB"
+# 			[libreoffice_gb]="en-GB"
+# 			[libreoffice_es]="es-es"
+# 			[libreoffice_pt]="pt-pt"
+# 			[libreoffice_br]="pt-BR"
+# 			[libreoffice_cn]="zh-CN"
+# 			
+# 			[libreoffice_mx]="es-mx"
+# 			[libreoffice_ar]="es-ar"
+# 			[libreoffice_cl]="es-cl"			
+# 			
+# 			[libreoffice_bo]="es-es"
+# 			[libreoffice_cr]="es-es"
+# 			[libreoffice_co]="es-es"
+# 			[libreoffice_do]="es-es"
+# 			[libreoffice_ec]="es-es"
+# 			[libreoffice_es]="es-es"
+# 			[libreoffice_gt]="es-es"
+# 			[libreoffice_hn]="es-es"
+# 			[libreoffice_ni]="es-es"
+# 			[libreoffice_pa]="es-es"			
+# 		)
+# # PLasMA
+# 		kde_lang+=(
+# 			[kde_za]="en_gb"
+# 			[kde_us]="en_gb"
+# 			[kde_gb]="en_gb"
+# 			[kde_es]="es"
+# 			[kde_br]="pt_br"
+# 			[kde_cn]="zh_cn"
+# 			
+# 			[kde_bo]="es"
+# 			[kde_cr]="es"
+# 			[kde_co]="es"
+# 			[kde_do]="es"
+# 			[kde_ec]="es"
+# 			[kde_es]="es"
+# 			[kde_gt]="es"
+# 			[kde_hn]="es"
+# 			[kde_ni]="es"
+# 			[kde_pa]="es"
+# 		)      
 		
 	
 # 		exit 
