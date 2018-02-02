@@ -50,7 +50,6 @@ create_user () {
 	useradd -u 1002 -g users -G wheel -s /bin/bash $NAME_USER || useradd -u 1002 -g users -s /bin/bash $NAME_USER 
 	# && passwd dux
 	[[ ! -d "/home/$NAME_USER" ]] && mkdir /home/$NAME_USER && chown $NAME_USER:users /home/$NAME_USER
-	set_pass_chroot "$NAME_USER" "b0ndag3"
 	msg_nn_end "ok"
 }
 
