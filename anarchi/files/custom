@@ -21,6 +21,9 @@
 # 	Le disque sur lequel grub sera installé GRUB_DISK=
 # 	L'interface reseau choisie NFSROOT=
 # 	L'environnement de bureau DE=
+#	L'architecture de la distribution ARCH=
+# 	Le display manager DM=
+# 	Le codage clavier X11 $X11_KEYMAP=
 #
 #
 
@@ -69,8 +72,62 @@ if [[ "$1" == "" ]]; then
 	sed -i "s/beginning-of-history/history-search-backward/g" /etc/inputrc
 	sed -i "s/end-of-history/history-search-forward/g" /etc/inputrc
 
+
+    # # END
 	exit
 fi
+# END
+
+# BEGIN binary paths session 
+# Used to complete xinitrc for slim and nodm
+if [[ $DM == "slim" ]] || [[ $DM == "nodm" ]]; then
+    declare -A binde=(
+        [plasma]="startkde"
+        [gnome]="gnome-session"
+        [cinnamon]="cinnamon-session"
+        [mate]="mate-session"
+        [lxde]="startlxde"
+        [xfce]="startxfce4"
+        [lxqt]="startlxqt"
+        [fluxbox]="startfluxbox"
+        [enlightenment]="enlightenment_start"
+    )
+fi
+# END
+
+# BEGIN configurations by the display-manager
+case $DM in
+    slim) su $NAME_USER -c "echo \"exec ${binde[$DE]}\" > /home/$NAME_USER/.xinitrc" ;;
+    nodm) 
+        sed -i "s/^NODM_USER=.*/NODM_USER=$NAME_USER/" /etc/nodm.conf
+        sed -i "s/^NODM_XSESSION=.*/NODM_XSESSION=\/home\/$NAME_USER\/.xinitrc/" /etc/nodm.conf
+        su $NAME_USER -c "echo \"exec ${binde[$DE]}\" > /home/$NAME_USER/.xinitrc && chmod +x /home/$NAME_USER/.xinitrc" 
+        echo "#%PAM-1.0
+
+auth      include   system-login
+account   include   system-login
+password  include   system-login
+session   include   system-login" > "/etc/pam.d/nodm"
+    ;;
+#     sddm)
+# #     BEGIN		Generate sddm.conf and change theme
+#         sddm --example-config > /etc/sddm.conf
+# 		sed -i "s/maui/breeze/" /etc/sddm.conf
+# #     END
+#     ;;
+    lightdm) 
+#         BEGIN random background LIGHTDM    
+            IMG_BG=$(find "/tmp/files/imgs/" -maxdepth 1 -type f | shuf | head -n 1 )
+            EXT_BG_NAME=$( echo "$IMG_BG" | sed "s/.*\.//")
+            BG_NAME="bg.$EXT_BG_NAME"
+            cp "$IMG_BG" /usr/share/pixmaps/$BG_NAME
+            sed -i "s/.*background=.*/background=\/usr\/share\/pixmaps\/$BG_NAME/" "/etc/lightdm/lightdm-gtk-greeter.conf"                
+        fi
+#         END		
+    ;;
+# 		gdm) : ;;
+# 		lxdm) : ;;
+esac
 # END
 
 CUSTOM_USER_SCRIPT="/tmp/files/custom.d/$NAME_USER"
