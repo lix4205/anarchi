@@ -1,3 +1,14 @@
+# BEGIN USER CONFIG
+# Par defaut :
+
+# Vous pouvez decommentez certaines parties et les modifier à votre gré :
+# - Monter un partage nfs et l'inscrire dans /etc/fstab ***
+# - *** IMPORTANT ! Decommentez aussi la ligne concernant le demontage en fin de fichier 
+# - Ajouter un fichier configurant le clavier pour tuer le serveur X avec ctrl+alt+backspace 
+# - Copier des fichiers de configurations particuliers depuis le serveur NFS
+# - Installer des logiciels selon l'environnement de bureau installé
+
+
 # echo "Configuration personnalisé pour $NAME_USER..."
 
 # # BEGIN X11 KEYBOARD CONFIG ( Ctrl + Alt + backspace kill xserver)

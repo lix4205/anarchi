@@ -78,6 +78,13 @@ if [[ "$1" == "" ]]; then
 fi
 # END
 
+# BEGIN USER CONFIG
+# Par defaut :
+# - Installe les paquets de yaourt (DECONSEILLÉ)
+# - Ajoute un fond d'ecran pour lightdm
+# - Configure xinitrc, pour slim, et nodm
+# - Lance le fichier custom.d/$NAME_USER
+
 # BEGIN binary paths session 
 # Used to complete xinitrc for slim and nodm
 if [[ $DM == "slim" ]] || [[ $DM == "nodm" ]]; then
@@ -92,6 +99,27 @@ if [[ $DM == "slim" ]] || [[ $DM == "nodm" ]]; then
         [fluxbox]="startfluxbox"
         [enlightenment]="enlightenment_start"
     )
+fi
+# END
+
+# BEGIN  install packages in files/de/yaourt.conf via AUR. 
+# files/de/yaourt.conf is empty by default 
+if [ "$LIST_YAOURT" != "" ]; then
+	rep=
+	while [[ "$rep" == "" ]]; do
+		echo -en "\033[01;37m  -> Install AUR packages Y/n ?\033[00m ( $LIST_YAOURT ) "
+		read -n 1 rep
+		case "$rep" in 
+			o|O|y|Y)
+				echo "$LIST_YAOURT install" 
+				su $NAME_USER -c "yaourt --arch $ARCH -Sy --noconfirm $LIST_YAOURT"
+				break				
+			;;
+			n|N) break;;
+			*) rep= ;;
+		
+		esac
+	done
 fi
 # END
 
