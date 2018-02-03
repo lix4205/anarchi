@@ -1,5 +1,6 @@
 
 # this fonction try to return the package traduction 
+# ADDED noto-fonts-cjk for korean, japanese, chinese
 trans_packages() {
 	local SOFT=$( echo $1 | sed "s/-.*//" )
 	local LOCALISATION=$2
