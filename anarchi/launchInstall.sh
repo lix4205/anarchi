@@ -971,6 +971,14 @@ source files/softs-trans
 # Firefox lang
 write_package "$NAV_PACKAGES $( trans_packages "$NAV_PACKAGES-i18n" "$LA_LOCALE" )" files/de/common.conf
 
+# Additionnal packages noto-fonts-cjk for korean, japanese, chinese
+case $( echo "${LA_LOCALE,,}" | sed "s/_.*//" ) in 
+    ja|ko|zh) 
+        write_package "$LANGAGE_PACK"
+#             caution ""
+    ;;
+esac
+
 PACSTRAP_OPTIONS=""
 for i in $SHOW_COMMANDE; do
 	perso "$( echo "${i}" | sed "s/-//")"  && COMMAND2LAUNCH="${COMMAND2LAUNCH//${i}/}" && PACSTRAP_OPTIONS+=" ${i}" && SHOW_COMMANDE="${SHOW_COMMANDE//${i}/}"

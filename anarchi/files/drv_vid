@@ -11,14 +11,19 @@ BASE_PACKAGES="base base-devel"
 GRUB_PACKAGES="grub os-prober"
 
 #
-# Additionnal packages
-#
-ADD_PACKAGES="openssh nfs-utils"
+# Additionnal packages noto-fonts-cjk for korean, japanese, chinese
+# 
+
+LANGAGE_PACK="noto-fonts-cjk"
 
 #
 # Navigator packages
 #
 NAV_PACKAGES="firefox"
+
+#
+# 
+#
 
 #
 # Videos drivers
