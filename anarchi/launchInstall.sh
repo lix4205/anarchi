@@ -615,7 +615,7 @@ set_locale() {
 	LOCALES=""
 	j=0
 	LA_LOCALE="$1" 
-	echo "$2 $PREFIX_PACMAN"
+# 	echo "$2 $PREFIX_PACMAN"
 # 	exit
 	if [[ ! -e "$2/etc/locale.gen" ]]; then
 		msg_n "$_missing_file" "/etc/locale.gen"

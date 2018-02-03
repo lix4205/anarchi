@@ -9,6 +9,7 @@
 # spanish ( Argentina, Chile ),
 # Arabic (A definir...)
 # chinese ( set to Simplified )
+# Russian
 # 
 # Sorry for the others, but give your arrays and I will add it...
 # 
@@ -368,38 +369,60 @@ echo_tab() {
 	
 }
 
-# this fonction return the package traduction 
+# this fonction try to return the package traduction 
 trans_packages() {
 	local SOFT=$( echo $1 | sed "s/-.*//" )
 	local LOCALISATION=$2
-	[ -z $LOCALISATION ] && LANGUAGE_2="us" || LANGUAGE_2="$( echo "${LOCALISATION,,}" | sed "s/.*_\(.*\)\..*/\1/" )"
-	case $LANGUAGE_2 in 
-		fr|de|it) echo -en $1-$LANGUAGE_2;;
+	[ -z $LOCALISATION ] && echo "us" || LANGUAGE_2="$( echo "${LOCALISATION,,}" | sed "s/.*_\(.*\)\..*/\1/" )"
+	LANGUAGE_BASE="$( echo "${LOCALISATION,,}" | sed "s/_.*//" )"
+	PACKAGE="$(show_pacman_for_lang "$1" "$LANGUAGE_2" "$LANGUAGE_BASE")"
 	
-		*)
-			if [ ! -z ${soft_trans[$LANGUAGE_2$(echo -ne "_")$SOFT]} ]; then
-				LANGUAGE_2="${soft_trans[$LANGUAGE_2$(echo -ne "_")$SOFT]}"
-				echo -ne $1-$LANGUAGE_2
-			else
-# 				show_pacman_for_lang "$1" "$LANGUAGE_2" >&2
-				caution "31" "33" "%s" "Les paquets de langues de $1 n'ont pas pu etre identifié !" 
-			fi
-		;;
-	esac
-	
+# 	case $LANGUAGE_BASE in 
+#         ru|ar|ja|da) echo -en $1-$LANGUAGE_BASE;;
+# 		*)
+#         case $LANGUAGE_2 in 
+#             es) echo -en $1-$LANGUAGE_2;;
+#         
+#             *)
+#                 if [ ! -z ${soft_trans[$LANGUAGE_2$(echo -ne "_")$SOFT]} ]; then
+#                     LANGUAGE_2="${soft_trans[$LANGUAGE_2$(echo -ne "_")$SOFT]}"
+#                     echo -ne $1-$LANGUAGE_2
+#                 else
+    				if [[ -z $PACKAGE ]]; then
+                        caution "31" "33" "%s" "Les paquets de langues de $1 n'ont pas pu etre identifié !" 
+                    fi
+#                 fi
+#             ;;
+#         esac		
+# 		;;
+# 	esac
+	echo $PACKAGE
 }
 
 show_pacman_for_lang() {
 	i=1;
 	local SOFT=$1
-	pacman -Ss "$1" | while read -r ;do 
-		[ $((i%2)) -eq 1 ] && _langages[$i]="$( echo $REPLY | sed "s/.*$SOFT-\(.*\) .*/\1/")"
-		[ $((i%2)) -eq 1 ] && _langages[$((i+1))]="$( echo $REPLY | sed "s/.*\/\(.*\) .*/\1/" )"
-		[ $((i%2)) -eq 0 ] && _langages[$i]+="$REPLY"
-		[ $((i%2)) -eq 0 ] && echo  "$( echo_tab "$( echo "$SOFT" | sed "s/-.*//" )" "$( echo ${_langages[$((i-1))]} | sed "s/$SOFT-//" )"  ) : ${_langages[$i]}"
-		i=$((i+1))
-	done
+    PACK=$(pacman -Ss $1-$3-$2 | grep $1-$3-$2 | sed "s/.*\($1-$3-$2\).*/\1/");
+# 	pacman -Ss $1-$LANGUAGE_BASE 
+# 	while read -r; do
+# 	
+#         echo $REPLY | sed "s/.*\($1-$3\).*/\1/" 
+# #         echo $REPLY | sed "s/.*\($1-$3\).*/\1/" 
+# 	done < <( pacman -Ss $1-$3 | grep $1-$3 | sed "s/.*\($1-$3\).*/\1/")
+    [[ -z $PACK ]] && PACK=$(pacman -Ss $1-$3 | grep $1-$3 | sed "s/.*\($1-$3.*\) .*/\1/" | head -n 1);
+	[[ -z $PACK ]] && return 1;
+	echo "$PACK";
+	return 0;
+# 	pacman -Ss "$1" | while read -r ;do 
+# 		[ $((i%2)) -eq 1 ] && _langages[$i]="$( echo $REPLY | sed "s/.*$SOFT-\(.*\) .*/\1/")"
+# 		[ $((i%2)) -eq 1 ] && _langages[$((i+1))]="$( echo $REPLY | sed "s/.*\/\(.*\) .*/\1/" )"
+# 		[ $((i%2)) -eq 0 ] && _langages[$i]+="$REPLY"
+# 		[ $((i%2)) -eq 0 ] && echo  "$( echo_tab "$( echo "$SOFT" | sed "s/-.*//" )" "$( echo ${_langages[$((i-1))]} | sed "s/$SOFT-//" )"  ) : ${_langages[$i]}"
+# 		i=$((i+1))
+# 	done
 }
+# 	show_pacman_for_lang "firefox-i18n" "JP" "ja"
+	
 	
 ######
 # English
@@ -416,6 +439,10 @@ MOZILLA="mozilla"
 declare -A _langages
 # show_pacman_for_lang "libreoffice-still" 
 declare -A soft_trans=(
+[ca_thunderbird]="fr"
+[be_thunderbird]="fr"
+[ch_thunderbird]="fr"
+[lu_thunderbird]="fr"
 
 [za_thunderbird]="en-za"
 [us_thunderbird]="en-us"
@@ -460,6 +487,16 @@ declare -A soft_trans=(
 [tn_thunderbird]="ar"
 [ye_thunderbird]="ar"
 
+[ru_thunderbird]="ru"
+[ua_thunderbird]="ru"
+# Korean
+#[kr_firefox]="ko"
+
+[ca_firefox]="fr"
+[be_firefox]="fr"
+[ch_firefox]="fr"
+[lu_firefox]="fr"
+
 [za_firefox]="en-za"
 [us_firefox]="en-us"
 [gb_firefox]="en-gb"
@@ -502,6 +539,16 @@ declare -A soft_trans=(
 [sy_firefox]="ar"
 [tn_firefox]="ar"
 [ye_firefox]="ar"
+
+[ru_firefox]="ru"
+[ua_firefox]="ru"
+
+#[kr_firefox]="ko"
+
+[ca_libreoffice]="fr"
+[be_libreoffice]="fr"
+[ch_libreoffice]="fr"
+[lu_libreoffice]="fr"
 
 [za_libreoffice]="en-ZA"
 [us_libreoffice]="en-GB"
@@ -546,6 +593,16 @@ declare -A soft_trans=(
 [tn_libreoffice]="ar"
 [ye_libreoffice]="ar"
 
+[ru_libreoffice]="ru"
+[ua_libreoffice]="ru"
+
+#[kr_libreoffice]="ko"
+
+[ca_kde]="fr"
+[be_kde]="fr"
+[ch_kde]="fr"
+[lu_kde]="fr"
+
 [za_kde]="en_gb"
 [us_kde]="en_gb"
 [gb_kde]="en_gb"
@@ -586,6 +643,10 @@ declare -A soft_trans=(
 [sy_kde]="ar"
 [tn_kde]="ar"
 [ye_kde]="ar"	
+
+[ru_kde]="ru"
+[ua_kde]="ru"
+#[kr_kde]="ko"
 			)
 # 			
 # 		trans_packages "firefox-l10n" "$LANG"

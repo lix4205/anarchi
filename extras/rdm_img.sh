@@ -77,14 +77,10 @@ touch /tmp/img.log
 
 [[ -e $LOG_FILE ]] && [[ $(cat $LOG_FILE | wc -l) -gt $HISTORY ]] && tail -n 20 $LOG_FILE > $LOG_FILE
 
-[[ ! -z $NAME_USER ]] && [[ -e /home/$NAME_USER/.config/user-dirs.dirs ]] && DIR_IMGS="$(cat /home/$NAME_USER/.config/user-dirs.dirs | grep XDG_PICTURES_DIR= | sed "s/XDG_PICTURES_DIR=\"\$HOME\/\(.*\)\"/\1/")"
-[[ ! -z $NAME_USER ]] && [[ ! -e $DIR_IMGS ]] &&  DIR_IMGS="/home/$NAME_USER/Images"
-[[ ! -z $NAME_USER ]] && ( ! ls -l $DIR_IMGS >> /dev/null 2>&1 || [[ $DIR_IMGS == "" ]] ) && DIR_IMGS="/home/$NAME_USER/Pictures"  
-if [[ -z $NAME_USER ]]; then
+# if [[ ! -z $NAME_USER ]]; then
+#     [[ -e /home/$NAME_USER/.config/user-dirs.dirs ]] && DIR_IMGS="$HOME/$(cat /home/$NAME_USER/.config/user-dirs.dirs | sed "s/XDG_PICTURES_DIR=\"\$HOME\/\(.*\)\"/\1/")"
+# else
 	if ! (( EUID == 0 )) ; then 
-		[[ -e /home/$USER/.config/user-dirs.dirs ]] && DIR_IMGS="$(cat /home/$USER/.config/user-dirs.dirs | grep XDG_PICTURES_DIR= | sed "s/XDG_PICTURES_DIR=\"\$HOME\/\(.*\)\"/\1/")"
-		[[ ! -e $DIR_IMGS ]] && DIR_IMGS="/home/$USER/Images"
-		[[ ! -e $DIR_IMGS ]] && DIR_IMGS="/home/$USER/Pictures"
+		[[ -e /home/$USER/.config/user-dirs.dirs ]] && DIR_IMGS="$HOME/$(cat /home/$USER/.config/user-dirs.dirs | grep XDG_PICTURES_DIR= | sed "s/XDG_PICTURES_DIR=\"\$HOME\/\(.*\)\"/\1/")"
 	fi
-	( [[ ! -e $DIR_IMGS ]] ) && DIR_IMGS="/home/lix/Pictures" && [[ ! -e $DIR_IMGS ]] && DIR_IMGS="/home/lix/Images/"
-fi
+# fi

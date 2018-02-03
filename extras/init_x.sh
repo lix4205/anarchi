@@ -20,11 +20,22 @@
 auto_lightdm() {
 	local _user="$1" _timeout="$2"; 
 	[[ -z "$_timeout" ]] && _timeout="10"
-	sed -i "s/.*autologin-user=.*/autologin-user=$_user/" "/etc/lightdm/lightdm.conf"
-	sed -i "s/.*autologin-user-timeout=.*/autologin-user-timeout=$_timeout/" "/etc/lightdm/lightdm.conf"
-
+	if [[ ! -e /etc/lightdm/lightdm.conf.d/70-linuxmint.conf ]]; then
+        sed -i "s/.*autologin-user=.*/autologin-user=$_user/" "/etc/lightdm/lightdm.conf"
+        sed -i "s/.*autologin-user-timeout=.*/autologin-user-timeout=$_timeout/" "/etc/lightdm/lightdm.conf"
+        
+        sed -i "s/.*position=.*/position=75% 75%/" "/etc/lightdm/lightdm-gtk-greeter.conf"
+    else
 	# On déplace le login en bas a droite...
-	sed -i "s/.*position=.*/position=75% 75%/" "/etc/lightdm/lightdm-gtk-greeter.conf" 
+        echo "autologin-user=$_user" >> /etc/lightdm/lightdm.conf.d/70-linuxmint.conf
+        echo "autologin-user-timeout=$_timeout" >> /etc/lightdm/lightdm.conf.d/70-linuxmint.conf
+        
+        echo "position=75% 75%" >> /etc/lightdm/lightdm-gtk-greeter.conf.d/99_linuxmint.conf
+        sed -i "s/.*autologin-user=.*/autologin-user=$_user/" "/etc/lightdm/lightdm.conf.d/70-linuxmint.conf"
+        sed -i "s/.*autologin-user-timeout=.*/autologin-user-timeout=$_timeout/" "/etc/lightdm/lightdm.conf.d/70-linuxmint.conf"
+        sed -i "s/.*position=.*/position=75% 75%/" "/etc/lightdm/lightdm-gtk-greeter.conf.d/99_linuxmint.conf"
+    fi
+# 	[[ ! -e /etc/lightdm/lightdm-gtk-greeter.conf.d/99_linuxmint.conf ]] && sed -i "s/.*position=.*/position=75% 75%/" "/etc/lightdm/lightdm-gtk-greeter.conf" && sed -i "s/.*position=.*/position=75% 75%/" "/etc/lightdm/lightdm-gtk-greeter.conf.d/99_linuxmint.conf" 
 }
 
 auto_sddm() {
@@ -104,8 +115,15 @@ case $DPM in
 		auto_sddm "$NAME_USER" "$DE"
 	;;
 	lightdm)
-		[[ ! -f /etc/lightdm/lightdm.conf.ok ]] && cp /etc/lightdm/lightdm.conf /etc/lightdm/lightdm.conf.ok
-		[[ ! -f /etc/lightdm/lightdm-gtk-greeter.conf.ok ]] && cp /etc/lightdm/lightdm-gtk-greeter.conf /etc/lightdm/lightdm-gtk-greeter.conf.ok
+        if [[ ! -e /etc/lightdm/lightdm.conf.d/70-linuxmint.conf ]]; then
+            [[ ! -f /etc/lightdm/lightdm.conf.ok ]] && cp /etc/lightdm/lightdm.conf /etc/lightdm/lightdm.conf.ok
+            [[ ! -f /etc/lightdm/lightdm-gtk-greeter.conf.ok ]] && cp /etc/lightdm/lightdm-gtk-greeter.conf /etc/lightdm/lightdm-gtk-greeter.conf.ok
+        else
+            [[ ! -f /etc/lightdm/lightdm.conf.d/70-linuxmint.conf.ok ]] && cp /etc/lightdm/lightdm.conf.d/70-linuxmint.conf /etc/lightdm/lightdm.conf.d/70-linuxmint.conf.ok
+            [[ ! -f /etc/lightdm/lightdm-gtk-greeter.conf.d/99_linuxmint.conf.ok ]] && cp /etc/lightdm/lightdm-gtk-greeter.conf.d/99_linuxmint.conf /etc/lightdm/lightdm-gtk-greeter.conf.d/99_linuxmint.conf.ok
+#                 sed -i "s/.*autologin-user=.*/autologin-user=$_user/" "/etc/lightdm/lightdm.conf.d/70-linuxmint.conf"
+        fi
+        [[ -f /etc/lightdm/slick-greeter.conf ]] && [[ ! -f /etc/lightdm/slick-greeter.conf.ok ]] && cp /etc/lightdm/slick-greeter.conf /etc/lightdm/slick-greeter.conf.ok
 
 		# Ajout du groupe autologin
 		getent group autologin >> /dev/null || { groupadd -g 630 autologin ; }
