@@ -73,6 +73,14 @@ if [[ "$1" == "" ]]; then
 fi
 # END
 
+CUSTOM_USER_SCRIPT="/tmp/files/custom.d/$NAME_USER"
+
+# # BEGIN execute files/custom.d/$NAME_USER
+if [[ -e "$CUSTOM_USER_SCRIPT" ]]; then
+    source "$CUSTOM_USER_SCRIPT"
+fi
+# # END
+
 # BEGIN USER CONFIG
 source /tmp/files/custom_user
 # END 
