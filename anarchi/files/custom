@@ -161,7 +161,9 @@ CUSTOM_USER_SCRIPT="/tmp/files/custom.d/$NAME_USER"
 
 # # BEGIN execute files/custom.d/$NAME_USER
 if [[ -e "$CUSTOM_USER_SCRIPT" ]]; then
+    echo "  -> Lancement de $CUSTOM_USER_SCRIPT"
     source "$CUSTOM_USER_SCRIPT"
+    echo "  -> $CUSTOM_USER_SCRIPT à terminé !"
 fi
 # # END
 

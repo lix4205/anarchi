@@ -186,7 +186,8 @@ echo -e "#\n#\n# Anarchi (From non based Arch ) ($(date "+%Y/%m/%d-%H:%M:%S"))\n
 declare -A to_mount
 
 is_root "$@" 
-
+# On reset le trap affichant la commande complete...
+trap - EXIT
 chroot_setup "$TMPROOT" "$OLDROOT"  || die "$_failed_prepare_chroot" "$TMPROOT"
 set_lang_chroot "$TMPROOT" 1 >> /dev/null &
 

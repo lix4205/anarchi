@@ -84,6 +84,17 @@ EOF
 }
 
 # BEGIN not in arch
+on_exit() {
+    [[ ! -f "$FILE_BOOTSTRAP" ]] && remove_boostrap
+    [[ ! -z $LAUNCH_COMMAND_ARGS ]] && echo "$DIR_SCRIPTS/$NAME_SCRIPT ${LAUNCH_COMMAND_ARGS[@]} $RACINE $OTHER_PACKAGES" > /tmp/aaic-$( date "+%Y%m%d-%H-%M" ) && msg_ntin "32" "32" "$_util_command" "/tmp/aaic-$( date "+%Y%m%d-%H-%M" )"
+cat <<EOF
+
+$DIR_SCRIPTS/$NAME_SCRIPT ${LAUNCH_COMMAND_ARGS[@]} $RACINE $OTHER_PACKAGES
+
+EOF
+
+}
+
 remove_boostrap () {
 	kill $PID_WGET 2> /dev/null && rm $FILE_BOOTSTRAP
 	[[ ! -z "$FIN" ]] && [[ $FIN -eq 0 ]] && rm $FILE_BOOTSTRAP
@@ -120,9 +131,8 @@ download_img () {
 
 			# Downloading in background until user has information...
 			$WGET > /tmp/$NAME_ARCHIVE-$UNAMEM.tar.gz.log 2>&1 &
-			PID_WGET=$!
-			trap "remove_boostrap" EXIT
-			
+			PID_WGET=$!		
+# 			trap "remove_boostrap" EXIT	
 		fi
 	fi
 	
@@ -247,6 +257,7 @@ define_arch () {
 # 		PREFIX_PACMAN+=$UNAMEM
 		download_img
 	fi
+	LAUNCH_COMMAND_ARGS+=("-a $ARCH");
 }
 
 conf_net () {
@@ -334,6 +345,7 @@ conf_net () {
 			;;
 		esac
 	fi
+	LAUNCH_COMMAND_ARGS+=("-n $CONF_NET");
 }
 
 net_wifi () {
@@ -389,6 +401,7 @@ graphic_setting () {
 				*) rep=
 			esac
 		done
+        LAUNCH_COMMAND_ARGS+=("-g $DRV_VID");
 	fi
 # 	msg_n "${graphic_drv[$1]}---$1---${graphic_drv[$DRV_VID]}!!!!${graphic_drv[name_$DRV_VID]}" 
 	[[ ! -z ${graphic_drv[name_$DRV_VID]} ]] && DRV_VID="${graphic_drv[name_$DRV_VID]}" 
@@ -465,6 +478,7 @@ desktop_environnement () {
 # 	done
 	[[ "$DE" != "0" ]] && msg_n "32" "32" "$_env_set" "$DE"
 	[[ "$DE" != "0" ]] && [[ -z "$DM" ]] && ! rid_continue "$_defaultdm" "${envir[syst_$DE]}" && choose_dm "$DE"
+	LAUNCH_COMMAND_ARGS+=("-e $DE");
 }
 name_host () {
 	#NOM MACHINE
@@ -472,6 +486,7 @@ name_host () {
 	while [[ $NAME_MACHINE == "" ]]; do
 		NAME_MACHINE=$(rid "$_hostname" )
 	done
+	LAUNCH_COMMAND_ARGS+=("-h $NAME_MACHINE");
 	
 }
 
@@ -482,46 +497,18 @@ name_user () {
 		[[ $USER_NAME == "root" ]] && msg_n "31" "31" "User login can't be %s !" "$USER_NAME"
 		USER_NAME=$(rid "$_username " )
 	done
+	LAUNCH_COMMAND_ARGS+=("-u $USER_NAME");
 }
 
 # INSTALLATION DE GRUB SUR LE DISQUE DUR $1
 check_disk() { [[ -b "$1" ]] && return 0 || die "$_grub_unable $1"; }
-cache_packages () { [[ -d "$1" ]] && CACHE_PAQUET=$1 || die "$_not_a_dir" $1; }
-
-# From AIF ARchitect... 
-# Set keymap for X11 
- set_xkbmap() {
-	declare -A langue
-	XKBMAP_LIST=""
-	keymaps_xkb=("af_Afghani al_Albanian am_Armenian ara_Arabic at_German-Austria az_Azerbaijani ba_Bosnian bd_Bangla be_Belgian bg_Bulgarian br_Portuguese-Brazil bt_Dzongkha bw_Tswana by_Belarusian ca_French-Canada cd_French-DR-Congo ch_German-Switzerland cm_English-Cameroon cn_Chinese cz_Czech de_German dk_Danishee_Estonian epo_Esperanto es_Spanish et_Amharic fo_Faroese fi_Finnish fr_French gb_English-UK ge_Georgian gh_English-Ghana gn_French-Guinea gr_Greek hr_Croatian hu_Hungarian ie_Irish il_Hebrew iq_Iraqi ir_Persian is_Icelandic it_Italian jp_Japanese ke_Swahili-Kenya kg_Kyrgyz kh_Khmer-Cambodia kr_Korean kz_Kazakh la_Lao latam_Spanish-Lat-American lk_Sinhala-phonetic lt_Lithuanian lv_Latvian ma_Arabic-Morocco mao_Maori md_Moldavian me_Montenegrin mk_Macedonian ml_Bambara mm_Burmese mn_Mongolian mt_Maltese mv_Dhivehi ng_English-Nigeria nl_Dutch no_Norwegian np_Nepali ph_Filipino pk_Urdu-Pakistan pl_Polish pt_Portuguese ro_Romanian rs_Serbian ru_Russian se_Swedish si_Slovenian sk_Slovak sn_Wolof sy_Arabic-Syria th_Thai tj_Tajik tm_Turkmen tr_Turkish tw_Taiwanese tz_Swahili-Tanzania ua_Ukrainian us_English-US uz_Uzbek vn_Vietnamese za_English-S-Africa")
-	j=0
-# 	&& -e "$1"
-	[[ "$1" == "" ]] && ( msg_n "$_set_keymapX11" && msg_nn2 "$_list_loading"  "X11 keymaps" ) || msg_nn2 "33" "$_x11k_checking" "$1"
-	loading &
-	PID_LOAD=$! && disown
-	for i in ${keymaps_xkb}; do
-		XKBMAP_LIST="$( echo "${XKBMAP_LIST} $((j+1))) ${i}" ) $( [[ "$(expr $((j+1))  % 4 )"  == "0" ]] && echo "\n"  ) "
-		j=$((j+1))
-		langue[$j]="${i}"
-		langue[_$j]="1"
-		langue[_$(echo ${i} |sed 's/_.*//')]="$(echo ${i} |sed 's/_.*//')"
-		localisation_tab[$(echo ${i} |sed 's/_.*//')]="1"
-	done
-	kill $PID_LOAD && printf "\b"
-	[[ "$1" == "" ]] && msg_nn_end "$_ok"
-	if [[ "$1" == "" || -z "${localisation_tab[$1]}" ]]; then
-		[[ "$1" != "" ]] && msg_nn_end "$_fail"
-		XKBMAP_LIST=${XKBMAP_LIST} 
-		echo -e ${XKBMAP_LIST} | column -t
-		XKBMAP=$( rid "$_choix_de $_pageup" )
-		while [[ "${langue[_$XKBMAP]}" != "1" ]]; do
-			XKBMAP=$( rid "$_choix_de $_pageup" )
-		done
-		X11_KEYMAP=$(echo ${langue[${XKBMAP}]} | sed 's/_.*//')
-	else
-		msg_nn_end "$_ok"	
-	fi
-	msg_n "32" "32" "$_x11k_selected" "$X11_KEYMAP"
+cache_packages () { 
+    if [[ -d "$1" ]]; then
+        CACHE_PAQUET=$1 
+        LAUNCH_COMMAND_ARGS+=("-c $CACHE_PAQUET")
+    else
+        die "$_not_a_dir" $1; 
+    fi
 }
 
 # Set Zone and Sub-Zone
@@ -574,8 +561,46 @@ set_timezone() {
 		fi
 	fi
 
-	msg_n "32" "32" "$_timezone_set" "$TIMEZONE"
-	sleep 1
+	msg_n "32" "32" "$_timezone_set" "$TIMEZONE";
+	LAUNCH_COMMAND_ARGS+=("-z $TIMEZONE");
+# 	sleep 1
+}
+
+# From AIF ARchitect... 
+# Set keymap for X11 
+ set_xkbmap() {
+	declare -A langue
+	XKBMAP_LIST=""
+	keymaps_xkb=("af_Afghani al_Albanian am_Armenian ara_Arabic at_German-Austria az_Azerbaijani ba_Bosnian bd_Bangla be_Belgian bg_Bulgarian br_Portuguese-Brazil bt_Dzongkha bw_Tswana by_Belarusian ca_French-Canada cd_French-DR-Congo ch_German-Switzerland cm_English-Cameroon cn_Chinese cz_Czech de_German dk_Danishee_Estonian epo_Esperanto es_Spanish et_Amharic fo_Faroese fi_Finnish fr_French gb_English-UK ge_Georgian gh_English-Ghana gn_French-Guinea gr_Greek hr_Croatian hu_Hungarian ie_Irish il_Hebrew iq_Iraqi ir_Persian is_Icelandic it_Italian jp_Japanese ke_Swahili-Kenya kg_Kyrgyz kh_Khmer-Cambodia kr_Korean kz_Kazakh la_Lao latam_Spanish-Lat-American lk_Sinhala-phonetic lt_Lithuanian lv_Latvian ma_Arabic-Morocco mao_Maori md_Moldavian me_Montenegrin mk_Macedonian ml_Bambara mm_Burmese mn_Mongolian mt_Maltese mv_Dhivehi ng_English-Nigeria nl_Dutch no_Norwegian np_Nepali ph_Filipino pk_Urdu-Pakistan pl_Polish pt_Portuguese ro_Romanian rs_Serbian ru_Russian se_Swedish si_Slovenian sk_Slovak sn_Wolof sy_Arabic-Syria th_Thai tj_Tajik tm_Turkmen tr_Turkish tw_Taiwanese tz_Swahili-Tanzania ua_Ukrainian us_English-US uz_Uzbek vn_Vietnamese za_English-S-Africa")
+	j=0
+# 	&& -e "$1"
+	[[ "$1" == "" ]] && ( msg_n "$_set_keymapX11" && msg_nn2 "$_list_loading"  "X11 keymaps" ) || msg_nn2 "33" "$_x11k_checking" "$1"
+	loading &
+	PID_LOAD=$! && disown
+	for i in ${keymaps_xkb}; do
+		XKBMAP_LIST="$( echo "${XKBMAP_LIST} $((j+1))) ${i}" ) $( [[ "$(expr $((j+1))  % 4 )"  == "0" ]] && echo "\n"  ) "
+		j=$((j+1))
+		langue[$j]="${i}"
+		langue[_$j]="1"
+		langue[_$(echo ${i} |sed 's/_.*//')]="$(echo ${i} |sed 's/_.*//')"
+		localisation_tab[$(echo ${i} |sed 's/_.*//')]="1"
+	done
+	kill $PID_LOAD && printf "\b"
+	[[ "$1" == "" ]] && msg_nn_end "$_ok"
+	if [[ "$1" == "" || -z "${localisation_tab[$1]}" ]]; then
+		[[ "$1" != "" ]] && msg_nn_end "$_fail"
+		XKBMAP_LIST=${XKBMAP_LIST} 
+		echo -e ${XKBMAP_LIST} | column -t
+		XKBMAP=$( rid "$_choix_de $_pageup" )
+		while [[ "${langue[_$XKBMAP]}" != "1" ]]; do
+			XKBMAP=$( rid "$_choix_de $_pageup" )
+		done
+		X11_KEYMAP=$(echo ${langue[${XKBMAP}]} | sed 's/_.*//')
+	else
+		msg_nn_end "$_ok"	
+	fi
+	msg_n "32" "32" "$_x11k_selected" "$X11_KEYMAP"
+	LAUNCH_COMMAND_ARGS+=("-K $X11_KEYMAP");
 }
 
  set_console_kmap() {
@@ -607,7 +632,8 @@ set_timezone() {
 			CONSOLEKEYMAP="${valid_kmap[$NUM_KEYMAP]}"
 		done
 	fi
-	msg_n "32" "32" "$_console_k_set" "$CONSOLEKEYMAP"
+	msg_n "32" "32" "$_console_k_set" "$CONSOLEKEYMAP";
+	LAUNCH_COMMAND_ARGS+=("-k $CONSOLEKEYMAP");
 }
 
 set_locale() {
@@ -641,6 +667,7 @@ set_locale() {
 		done
 	fi
 	msg_n "32" "32" "$_locales_set" "$LA_LOCALE"
+	LAUNCH_COMMAND_ARGS=("$LA_LOCALE" "${LAUNCH_COMMAND_ARGS[@]}")
 }
 
 perso () {
@@ -853,14 +880,17 @@ if ls $FILE2SOURCE*.conf >> /dev/null 2>&1; then
 				esac	
 			done
 
+            LAUNCH_COMMAND_ARGS="$LA_LOCALE -a $ARCH $( [[ "$GRUB_INSTALL" != "" ]] && echo "-l $GRUB_INSTALL" ) $( [[ "$CACHE_PAQUET" != "" ]] && echo "-c $CACHE_PAQUET" ) $QUIET$TESTING -n $CONF_NET $( [[ "$DRV_VID" != "0" ]] && echo "-g $DRV_VID  -e $DE" ) -h $NAME_MACHINE -u $USER_NAME -z $TIMEZONE -k $CONSOLEKEYMAP -K $X11_KEYMAP"
 			break;
 		fi
 		rf="$(rid_1 "32" "32" "$_file_load (%s)  [ ${_yes^}/$_no/e ]" "$( ls $FILE2SOURCE* )" )"
 	done
 	msg_nn_end
 	[[ "$rf" == "$_no" ]] && rm $FILE2SOURCE*.conf
+
 fi
 
+trap "on_exit" EXIT	
 if [[ ! $FROM_FILE ]]; then
 	if [[ -z $1 || $1 = @(-h|--help) ]]; then
 		msg "$_nodir"
@@ -891,8 +921,9 @@ if [[ ! $FROM_FILE ]]; then
 			
 			q|t) 
 				perso "$flag";
+				LAUNCH_COMMAND_ARGS+=("-$flag")
 			;;
-			l) check_disk "$OPTARG" && GRUB_INSTALL="$OPTARG" ;;
+			l) check_disk "$OPTARG" && GRUB_INSTALL="$OPTARG" && LAUNCH_COMMAND_ARGS+=("-l $GRUB_INSTALL") ;;
 			:) die "$_argument_option" "${0##*/}" "$OPTARG" ;;
 			?) die "$_invalid_option" "${0##*/}" "$OPTARG" ;;
 		esac
@@ -918,6 +949,7 @@ if [[ ! $FROM_FILE ]]; then
 	set_timezone "$TIMEZONE"
 	set_console_kmap "$CONSOLEKEYMAP" "$PREFIX_PACMAN"
 	set_xkbmap "$X11_KEYMAP"
+	
 fi
 [[ -d $RACINE ]] || die "$_not_a_dir" "$RACINE"
 if ! mountpoint -q "$RACINE" && (( ! directory )); then
@@ -981,7 +1013,8 @@ esac
 
 PACSTRAP_OPTIONS=""
 for i in $SHOW_COMMANDE; do
-	perso "$( echo "${i}" | sed "s/-//")"  && COMMAND2LAUNCH="${COMMAND2LAUNCH//${i}/}" && PACSTRAP_OPTIONS+=" ${i}" && SHOW_COMMANDE="${SHOW_COMMANDE//${i}/}"
+	perso "$( echo "${i}" | sed "s/-//")" && COMMAND2LAUNCH="${COMMAND2LAUNCH//${i}/}" && PACSTRAP_OPTIONS+=" ${i}" && SHOW_COMMANDE="${SHOW_COMMANDE//${i}/}"
+	LAUNCH_COMMAND_ARGS+=("${i}")
 done
 
 for i in $( grep -h -v ^# files/de/trans-packages.conf ); do
@@ -995,19 +1028,14 @@ fi
 if (( $REQUIRE_PACMAN )); then
 	notinarch_function 
 else
-	COMMAND2LAUNCH="$WORK_DIR/$NAME_SCRIPT2CALL $LA_LOCALE -K $X11_KEYMAP -k $CONSOLEKEYMAP -z \"$TIMEZONE\" -a $ARCH -n $CONF_NET $( [[ "$DRV_VID" != "0" ]] && echo "-g $DRV_VID  -e $DE" ) -h $NAME_MACHINE -u $USER_NAME $( [[ "$GRUB_INSTALL" != "" ]] && echo "-l $GRUB_INSTALL" ) $( [[ "$CACHE_PAQUET" != "" ]] && echo "-c $CACHE_PAQUET" ) $QUIET$TESTING$PACSTRAP_OPTIONS $RACINE $OTHER_PACKAGES"	
-	
+# 	COMMAND2LAUNCH="$WORK_DIR/$NAME_SCRIPT2CALL $LA_LOCALE -K $X11_KEYMAP -k $CONSOLEKEYMAP -z \"$TIMEZONE\" -a $ARCH -n $CONF_NET $( [[ "$DRV_VID" != "0" ]] && echo "-g $DRV_VID  -e $DE" ) -h $NAME_MACHINE -u $USER_NAME $( [[ "$GRUB_INSTALL" != "" ]] && echo "-l $GRUB_INSTALL" ) $( [[ "$CACHE_PAQUET" != "" ]] && echo "-c $CACHE_PAQUET" ) $QUIET$TESTING$PACSTRAP_OPTIONS $RACINE $OTHER_PACKAGES"	
+	COMMAND2LAUNCH=("$WORK_DIR/$NAME_SCRIPT2CALL" "${LAUNCH_COMMAND_ARGS[@]}" "$RACINE" "$OTHER_PACKAGES")
 	search_pkg $OTHER_PACKAGES
 fi
 
-LAUNCH_COMMAND="$DIR_SCRIPTS/$NAME_SCRIPT $LA_LOCALE -K $X11_KEYMAP -k $CONSOLEKEYMAP -z $TIMEZONE -a $ARCH -n $CONF_NET $( [[ "$DRV_VID" != "0" ]] && echo "-g $DRV_VID  -e $DE" ) -h $NAME_MACHINE -u $USER_NAME $( [[ "$GRUB_INSTALL" != "" ]] && echo "-l $GRUB_INSTALL" ) $( [[ "$CACHE_PAQUET" != "" ]] && echo "-c $CACHE_PAQUET" ) $QUIET$TESTING$SHOW_COMMANDE $PACSTRAP_OPTIONS $RACINE $OTHER_PACKAGES"
+LAUNCH_COMMAND=("$DIR_SCRIPTS/$NAME_SCRIPT" "${LAUNCH_COMMAND_ARGS[@]}" "$RACINE" "$OTHER_PACKAGES")
+# LAUNCH_COMMAND="$DIR_SCRIPTS/$NAME_SCRIPT $LA_LOCALE -K $X11_KEYMAP -k $CONSOLEKEYMAP -z $TIMEZONE -a $ARCH -n $CONF_NET $( [[ "$DRV_VID" != "0" ]] && echo "-g $DRV_VID  -e $DE" ) -h $NAME_MACHINE -u $USER_NAME $( [[ "$GRUB_INSTALL" != "" ]] && echo "-l $GRUB_INSTALL" ) $( [[ "$CACHE_PAQUET" != "" ]] && echo "-c $CACHE_PAQUET" ) $QUIET$TESTING$SHOW_COMMANDE $PACSTRAP_OPTIONS $RACINE $OTHER_PACKAGES"
 
-    echo $DIR_SCRIPTS/$NAME_SCRIPT $LAUNCH_COMMAND > /tmp/aaic-$( date "+%Y%m%d-%H-%M" ) && msg_ntin "32" "32" "$_util_command" "/tmp/aaic-$( date "+%Y%m%d-%H-%M" )"
-cat <<EOF
-
-$LAUNCH_COMMAND
-
-EOF
 
 echo "#!/bin/bash
 
@@ -1042,6 +1070,8 @@ echo -en "$SYSTD_TOENABLE" >> files/systemd.conf
 echo $LAUNCH_COMMAND >> /tmp/history
 rid_exit "$_continue"
 msg_n "32" "$_go_on"
+
+# exit
 run_or_su "${COMMAND2LAUNCH}"
 FIN=$?
 # msg_n "$FIN"
