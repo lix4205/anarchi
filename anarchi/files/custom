@@ -81,7 +81,3 @@ if [[ -e "$CUSTOM_USER_SCRIPT" ]]; then
 fi
 # # END
 
-# BEGIN USER CONFIG
-source /tmp/files/custom_user
-# END 
-
