@@ -441,13 +441,12 @@ choose_dm() {
         done
         envir[syst_$DE]="${envir[dm_$choix_dm]}"
         msg_n "32" "32" "$_selected" "${envir[dm_$choix_dm]}"
-        [[ ! -z "${envir[pack_${envir[dm_$choix_dm]}]}" ]] && envir[dm_$choix_dm]="${envir[pack_${envir[dm_$choix_dm]}]}"
         envir[dm_$DE]="${envir[dm_$choix_dm]}"
     fi
 # 	die "ok %s ok %s" "$choix_dm" "${envir[dm_$choix_dm]}"
 }
 desktop_environnement () {
-	DE=$1
+	DE="$1"
 	i=0
 	for env_dispo in ${ENVIRONNEMENT[@]}; do 
 		i=$((i+1));
@@ -456,7 +455,7 @@ desktop_environnement () {
         [[ "$env_dispo" == "$DE" ]] && break;
 # 		msg_edit+="\n\t$i) $RACINE$f2e"
 	done 
-	if [[ "$DE" == "" ]] || [[ -z ${envir[$DE]} ]]; then 
+	if [[ -z "$DE" ]] || [[ -z ${envir[$DE]} ]]; then 
 # 		msg_nn "$_env"
 		msg_nn "$(rid_menu -q "$_env" "${ENVIRONNEMENT[@]}")"
 		while [[ "$DE" == "" ]] || [[ -z ${envir[$DE]} ]]; do
@@ -470,8 +469,11 @@ desktop_environnement () {
 
 	[[ "$DE" != "0" ]] && msg_n "32" "32" "$_env_set" "$DE"
 	LAUNCH_COMMAND_ARGS+=("-e $DE");
+	# Choix du display manager...
 	[[ "$DE" != "0" ]] && choose_dm "$DE"
 	LAUNCH_COMMAND_ARGS+=("-D ${envir[syst_$DE]}");
+    [[ ! -z "${envir[pack_${envir[syst_$DE]}]}" ]] && envir[dm_$DE]="${envir[pack_${envir[syst_$DE]}]}"
+# die "${LAUNCH_COMMAND_ARGS[@]}"
 }
 name_host () {
 	#NOM MACHINE
@@ -1053,7 +1055,8 @@ RACINE=$RACINE
 GRUB_INSTALL=$GRUB_INSTALL
 DRV_VID=$DRV_VID
 DE=$DE
-DM=${envir[dm_$DE]}
+DM=${envir[syst_$DE]}
+# DM=${envir[dm_$DE]}
 CONF_NET=$CONF_NET
 WIFI_NETWORK=$WIFI_NETWORK
 NAME_MACHINE=$NAME_MACHINE
@@ -1070,7 +1073,7 @@ PACSTRAP_OPTIONS=\"$PACSTRAP_OPTIONS\"
 SHOW_COMMANDE=\"$SHOW_COMMANDE \$PACSTRAP_OPTIONS\"
 OTHER_PACKAGES=\"$OTHER_PACKAGES\"
 " > $FILE2SOURCE$NAME_MACHINE-$LA_LOCALE.conf
-
+cat $FILE2SOURCE$NAME_MACHINE-$LA_LOCALE.conf
 echo -en "$SYSTD_TOENABLE" >> files/systemd.conf
 
 # END GRAPHIC DRIVERSOFTS LANG and SYSTEMD SERVICE TO ENABLE
