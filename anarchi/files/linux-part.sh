@@ -71,15 +71,16 @@ chroot_setup() {
 	
 	[[ "${NEW_ROOT:${#NEW_ROOT}-1}" == "/"  ]] && NEW_ROOT="${NEW_ROOT:0:${#NEW_ROOT}-1}"
 	mount_setup "$@"
-	# WTF ???
-# 	[[ "$CACHE_PAQUET" != ""  ]] && chroot_add_mount "$CACHE_PAQUET" "$1$DEFAULT_CACHE_PKG" -t none -o bind || return 0
+
 	[[ "$CACHE_PAQUET" != ""  ]] && chroot_add_mount "$CACHE_PAQUET" "$1$DEFAULT_CACHE_PKG" -t none -o bind
 	chroot_maybe_add_mount "! mountpoint -q '$TMP_ROOT$ROOT_DIR_BOOTSTRAP'" "$NEW_ROOT" "$TMP_ROOT$ROOT_DIR_BOOTSTRAP" -t none -o bind &&
 	chroot_setup_others
+    [[ -d /tmp/done ]] && ls /tmp/done | grep -q anarchi_* && cp -R /tmp/done $TMPROOT/tmp/
+	# On copie les fichiers 
 	[[ -e $NAME_SCRIPT2CALL ]] && [[ ! -e "$1$WORK_DIR" ]] && mkdir -p $1$WORK_DIR 
 	[[ -e $NAME_SCRIPT2CALL ]] && cp -R {$NAME_SCRIPT2CALL,files} $1$WORK_DIR/ 
 }
-
+# BEGIN On recupere le contenu des fichiers de paquets files/de/*
 recup_files () {
 	local TMP=""
 	for i in $( cat $1 | grep -v "#" ); do TMP+="$i "; done
@@ -92,13 +93,14 @@ desktop_environnement () {
 	# TODO Verifier si [[ -e files/de/$DE.conf  ]] est utile...
 	LIST_SOFT="$( [[ -e files/de/$DE.conf  ]] && recup_files files/de/$DE.conf && printf " " && recup_files files/de/common.conf )"
 	LIST_YAOURT="$( recup_files files/de/yaourt.conf )"
-# 	bash
+
 	echo $SYSTD > $TMPROOT$WORK_DIR/files/systemd.conf
 	echo $LIST_SOFT > $TMPROOT$WORK_DIR/files/de/common.conf
 	echo $LIST_YAOURT > $TMPROOT$WORK_DIR/files/de/yaourt.conf
 }
+# END
 
-# BEGIN fstab & load_langage
+# BEGIN fstab
 # bind mounts do not have a UUID! ( genfstab... )
 set_uuid_fstab() {
 	str="/"
@@ -122,7 +124,9 @@ set_uuid_fstab() {
 		} </proc/swaps
 	done
 }
+# END
 
+# BEGIN load translations
 load_language() {
 	local file_2_load
 
@@ -146,17 +150,41 @@ load_language() {
 		LA_LOCALE="" && return 1 
 	fi
 }
+# END
 
+# BEGIN Override show_pacman_for_lang dans softs-trans
+# We need chroot, grep et sed...
+# sed et grep ne sont pas installé dans arch Bootstrap...
+
+# We have to load package list before search with pacman
+anarchi_pac_sy() {
+    loading arch_chroot "$TMPROOT" "pacman -Sy"
+}
+show_pacman_for_lang_chroot() {
+	# Forme generique "nom_paquet-locale-pays" Ex : firefox-es-mx
+    PACK=$(chroot "$TMPROOT" pacman -Ss "$1-$3-$2" | grep "$1-$3-$2" | sed "s/.*\($1-$3-$2\).*/\1/");
+#     echo "1: $PACK : pacman -Ss $1-$3-$2 | grep $1-$3-$2"
+	# Pour la forme  "nom_paquet-locale-locale" Ex : firefox-es-es
+    [[ -z $PACK ]] && PACK=$(chroot "$TMPROOT" pacman -Ss "$1-$3-$3" | grep "$1-$3-$3" | sed "s/.*\($1-$3-$3.*\) .*/\1/");
+#     echo "2: $PACK"
+	# Pour la forme  "nom_paquet-locale" Ex : firefox-es
+    [[ -z $PACK ]] && PACK=$(chroot "$TMPROOT" pacman -Ss "$1-$3" | grep "$1-$3" | sed "s/.*\($1-$3.*\) .*/\1/" | head -n 1);
+	[[ -z $PACK ]] && return 1;
+#     echo "3: $PACK"
+	echo "$PACK";
+	return 0;
+}
+# END
+
+# BEGIN create new PGP keys to avoid install errors
 anarchi_gpg_init() {
 	msg_n "32" "Initialisation des cles GPG avec \"pacman-key --init\""
 	caution "Cette opération peut prendre un certain temps !"
-	# msg_n "Il est recommandé de lancer \"ls -R /\" pour aller plus vite."
 	loading arch_chroot "$TMPROOT" "pacman-key --init" &
 	PID_CHT=$!
-# 	PID2KLL+=" $PID_CHT"
 	ls -R / >/dev/null 2>&1 &
 	PID_LS=$!
-disown
+    disown
 	wait $PID_CHT
 	kill $PID_LS >/dev/null 2>&1
 	loading arch_chroot "$TMPROOT" "pacman-key --populate" 
@@ -165,8 +193,8 @@ disown
 }
 # END
 
-
 # BEGIN main
+
 source "$FILE2SOURCE$3-$4.conf"
 source files/src/chroot_common.sh
 # Used by run_once
@@ -176,11 +204,15 @@ TMPROOT="$1"
 # Real path
 OLDROOT="$2"
 # On repasse NO_EXEC a zero pour ecrire les commandes...
+# NOTE ici pourquoi je fais ca déjà !!!!
+# NO_EXEC à 1 va executer les commandes et les inscrires dans $FILE_COMMANDS
+# NO_EXEC à 0 inscrires les commandes dans $FILE_COMMANDS
 TMP_NO_EXEC=$NO_EXEC
 NO_EXEC=0
-FILE_COMMANDS=/tmp/anarchi_command
-touch /tmp/anarchi_command
+# FILE_COMMANDS=/tmp/anarchi_command
+# touch /tmp/anarchi_command
 
+# Entete du fichiers de commandes /tmp/anarchi_command
 echo -e "#\n#\n# Anarchi (From non based Arch ) ($(date "+%Y/%m/%d-%H:%M:%S"))\n#\n#\n" >> $FILE_COMMANDS
 
 declare -A to_mount
@@ -188,45 +220,69 @@ declare -A to_mount
 is_root "$@" 
 # On reset le trap affichant la commande complete...
 trap - EXIT
+# Prepare le chroot 
 chroot_setup "$TMPROOT" "$OLDROOT"  || die "$_failed_prepare_chroot" "$TMPROOT"
+# Initialise le langage
 set_lang_chroot "$TMPROOT" 1 >> /dev/null &
-
+# Force la connexion Internet sur la "route" principale
 echo "nameserver $( routel | grep default.*[0..9] | awk '{print $2}' )" >> $TMPROOT/etc/resolv.conf
-
-sleep 1
+sleep .2
+# Initialise les clés PGP
 run_once anarchi_gpg_init
+# Copie la conf de pacman
 cp files/pacman.conf.$ARCH $OLDROOT/pacman.conf.$ARCH
+# 
 mkdir -m 0755 -p $OLDROOT$DEFAULT_CACHE_PKG
 [[ -e $FILE2SOURCE*.conf ]] && cp $FILE2SOURCE*.conf $TMPROOT/tmp/
 
-ls /tmp/done | grep -q done.anarchi* && cp -R /tmp/done $TMPROOT/tmp/
+# BEGIN Recuperation des paquets de langue 
+# inscris dans le fichier /tmp/install/trans_packages
+# (pour kde, libreoffice, thunderbird et firefox)
+# NOTE La fonction set_trans_package se trouve dans files/trans_packages
+if [[ -e /tmp/install/trans_packages ]]; then
+    run_once anarchi_pac_sy >> /dev/null
+    while read -r; do
+        write_package "$(show_pacman_for_lang_chroot $(set_trans_package "$REPLY" "$LA_LOCALE"))" "files/de/common.conf"
+    done< <( cat "/tmp/install/trans_packages" )
+fi
+# END
 
+# Création de la liste des paquets à installer
 desktop_environnement "$5"
 
-# On copie les fichier dans le 
+# NOTE WiFi install...
 [[ "$WIFI_NETWORK" != "" ]] && conf_net_wifi "$WIFI_NETWORK" && cp /tmp/$NET_CON files/
-
+# Lancement de la commande 'pacinstall' dans l'environnement chrooté
 arch_chroot "$TMPROOT" "$COMMAND4ARCH"
 PID_COM=$?
 
-ls $TMPROOT/tmp/done | grep -q done.anarchi* && cp -R $TMPROOT/tmp/done /tmp/
-
+# Recuperation des fichiers indiquant qu'une opération à déjà été faite
+[[ -d $TMPROOT/tmp/done ]] && ls $TMPROOT/tmp/done | grep -q anarchi_* && cp -R $TMPROOT/tmp/done /tmp/
+# Ecrit les commandes executés en chroot dans le fichier /tmp/anarchi_command sur l'hote
 [[ -e $TMPROOT/tmp/anarchi_command ]] && cat $TMPROOT/tmp/anarchi_command >> /tmp/anarchi_command
+# Si la commande à bien été executée, alors
 if [[ $PID_COM -eq 0 ]]; then
+# On reinitialise la variable NO_EXEC
 	NO_EXEC=$TMP_NO_EXEC
+# On réecrit /etc/fstab pour monter les disques avec UUID
 	set_uuid_fstab "$RACINE"
+	
 	final_message="$( set_lang_chroot "$RACINE" )\n"
-
+# Genere un fichier de configuration pour grub (hors nfsroot)
 	[[ "$NETERFACE" != "nfsroot"  ]] && [[ "$GRUB_INSTALL" == ""  ]] && bash files/extras/genGrub.sh "$RACINE" "$NAME_MACHINE" > /tmp/grub_$NAME_MACHINE && msg_n "32" "32" "$_grub_created" "\"/tmp/grub_$NAME_MACHINE\""
 fi
 NO_EXEC=0
+# CAUTION gpg-agent can be running while we're unmounting the installation...
 pkill gpg-agent >> /dev/null 2>&1
 
 clear_line
+# On démonte tout...
 chroot_teardown "reset"
-
+# Initialise $FIN avec le resultat de la commande $COMMAND4ARCH
 FIN=$PID_COM
+# On reaffecte NO_EXEC
 NO_EXEC=$TMP_NO_EXEC
-echo -e "#\n#\n# Anarchi Ending ($(date "+%Y/%m/%d-%H:%M:%S"))\n#\n#\n" >> $FILE_COMMANDS
+# Fin du fichiers de commandes /tmp/anarchi_command
+echo -e "#\n#\n# Anarchi Ending (From non based Arch ) ($(date "+%Y/%m/%d-%H:%M:%S"))\n#\n#\n" >> $FILE_COMMANDS
 
 # END

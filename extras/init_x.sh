@@ -40,6 +40,7 @@ auto_lightdm() {
 
 auto_sddm() {
 	local _user="$1" _desktop="$2"; 
+	[[ "$_desktop" == "lxde" ]] && _desktop="${_desktop^^}"
 	sed -i.backup -e "s/^Session=/Session=$_desktop.desktop #/" /etc/sddm.conf
 	sed -i.backup -e "s/^User=/User=$_user #/" /etc/sddm.conf
 }
@@ -101,7 +102,7 @@ declare -A binde=(
 # [[ "$1"  == "1" ]] && shift && INIT_AUTOLOGIN=1
 NAME_USER="$1"
 [[ -z $NAME_USER ]] && echo "Aucun utilisateur défini !" && exit 1
-! grep "^$NAME_USER:" /etc/passwd > /dev/null && echo "L'utilisateur n'existe pas !" && exit 1
+! id -u "$NAME_USER" > /dev/null && echo "L'utilisateur n'existe pas !" && exit 1
 DPM="$2"
 [[ -z $DPM ]] && echo "Aucun gestionnaire de connexion défini !" && exit 1
 DE=$3

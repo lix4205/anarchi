@@ -138,9 +138,12 @@ password  include   system-login
 session   include   system-login" > "/etc/pam.d/nodm"
     ;;
 #     sddm)
-# #     BEGIN		Generate sddm.conf and change theme
+# #     BEGIN		Generate sddm.conf and change theme...
 #         sddm --example-config > /etc/sddm.conf
-# 		sed -i "s/maui/breeze/" /etc/sddm.conf
+#         sed -i "s/maui/breeze/" /etc/sddm.conf
+#                   ... or activate the automatic logon
+#         sed -i "s/User=.*/User=$NAME_USER/" /etc/sddm.conf
+#         sed -i "s/Session=.*/Session=$DE.desktop/" /etc/sddm.conf
 # #     END
 #     ;;
     lightdm) 

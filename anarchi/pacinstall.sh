@@ -16,8 +16,6 @@
 #
 # Another Arch Installer
 #
-# echo "Puatinklj !"
-# exit
 #
 # Assumptions:
 #  1) User has partitioned, formatted, and mounted partitions on /mnt
@@ -38,7 +36,7 @@ usage: ${0##*/} [options] root [packages...]
     -M             Avoid copying the host's mirrorlist to the target
     -a architecture                       Architecture du processeur (x64/i686)
     -g graphic driver to install          Pilote carte graphique (intel,nvidia{-304,340},radeon)
-    -e desktop environnement              Environnement de bureau (kde4,plasma,xfce,lxde,gnome,mate)
+    -e desktop environnement              Environnement de bureau (plasma,xfce,lxde,gnome,mate,fluxbox)
     -h hostname                           Nom de la machine
     -u username                           Login utilisateur
     -n [ nm, dhcpcd@<< network_interface >> ]       Utilisation de NetworkManager ou dhcpcd (avec l'interface NETWORK_INTERFACE)
@@ -52,10 +50,10 @@ usage: ${0##*/} [options] root [packages...]
 
     -h             Print this help message
 
-pacinstall installs packages named in files/*.conf to the specified new root directory.
+pacinstall installs packages named in files/de/*.conf to the specified new root directory.
 Then generate fstab, add the user,create passwords, install grub if specified,
 enable systemd services like the display manager
-And files/custom_user is executed as a personal script 
+And files/custom.d/<username> is executed as a personal script 
 
 EOF
 }
@@ -68,7 +66,14 @@ chroot_setup() {
 
 # 	[[ "$CACHE_PAQUET" != "" ]] && chroot_add_mount "$CACHE_PAQUET" "$1$DEFAULT_CACHE_PKG" -t none -o bind || return 0
 }
-          
+
+set_sudo() {
+	show_msg msg_n "32" "32" "$_init_sudo" "sudo"
+	exe ">" $RACINE/etc/sudoers.d/$1 echo "$1 $sudo_entry" 
+# 	arch_chroot "gpasswd -a $1 sudo" 
+	arch_chroot "passwd -l root" 
+}
+
 set_pass_chroot () {
 	if [[ "$2" != "" ]]; then
 		(( ! $NO_EXEC )) && lix_chroot $RACINE "echo "$1:$2" | chpasswd"
@@ -159,8 +164,8 @@ $( cat $file_to_write )" > $file_to_write
 }
 
 
-moche_install() { :
-}
+# moche_install() { :
+# }
 
 load_language() {
 	local file_2_load
@@ -185,13 +190,6 @@ load_language() {
 		(( $( echo "$LA_LOCALE" | grep "_" | wc -l ) )) && msg_n2 "31" "31" "$_no_translation" "${LA_LOCALE:0:${#LA_LOCALE}-6}" "$locale_2_load" && return 0 
 		LA_LOCALE="" && return 1 
 	fi
-}
-
-set_sudo() {
-	show_msg msg_n "32" "32" "$_init_sudo" "sudo"
-# 	echo "%wheel      ALL=(ALL) ALL" > $RACINE/etc/sudoers.d/users
-	exe ">" $RACINE/etc/sudoers.d/users echo "$sudo_entry" 
-	arch_chroot "passwd -l root" 
 }
 
 anarchi_create_root() {
@@ -256,7 +254,7 @@ anarchi_custom() {
 
 anarchi_passwd() {
 	show_msg msg_n2 "33" "32" "$_pass_msg" "$USER_NAME" 
-	arch_chroot "useradd -m -g users -G wheel -s /bin/bash $USER_NAME" && ( [[ "$pass_root" == "sudo" ]] && set_sudo || set_pass_chroot "root" "$pass_root" ) && set_pass_chroot "$USER_NAME" "$pass_user" || show_msg caution "$_pass_unchanged" "$USER_NAME"
+	arch_chroot "useradd -m -g users -G wheel -s /bin/bash $USER_NAME" && ( [[ "$pass_root" == "sudo" ]] && set_sudo "$USER_NAME" || set_pass_chroot "root" "$pass_root" ) && set_pass_chroot "$USER_NAME" "$pass_user" || show_msg caution "$_pass_unchanged" "$USER_NAME"
 }
 
 anarchi_packages() {
@@ -277,7 +275,7 @@ anarchi_packages() {
 	
 #	Install packages 
 	! exe $QUIET pacman -r "$RACINE" -Sy --needed ${yaourt_args[@]} && die "$_pacman_fail" "$RACINE"
-	moche_install 
+# 	moche_install 
 # 	[[ -e /tmp/00-keyboard.conf ]] && exe mkdir -p $RACINE/etc/X11/xorg.conf.d/ && exe cp /tmp/00-keyboard.conf $RACINE/etc/X11/xorg.conf.d/00-keyboard.conf 
 	[[ -e /tmp/00-keyboard.conf ]] && exe cp /tmp/00-keyboard.conf $RACINE/etc/X11/xorg.conf.d/00-keyboard.conf 
 
@@ -387,7 +385,7 @@ pacman_multilib="\n#Multilib configuration\n[multilib]\nInclude = /etc/pacman.d/
 pacman_yaourt="\n#AUR configuration\n[archlinuxfr]\nServer = http://repo.archlinux.fr/\$arch\nSigLevel = Never" 
 grub_entries="\n\nmenuentry \"System shutdown\" {\n\techo \"System shutting down...\"\n\thalt\n}"
 grub_entries+="\n\nmenuentry \"System restart\" {\n\techo \"System rebooting...\"\n\treboot\n}"
-sudo_entry="%wheel      ALL=(ALL) ALL"
+sudo_entry="      ALL=(ALL) ALL"
 hosts_entry="#\n#\n# /etc/hosts: static lookup table for host names\n#\n#<ip-address>\t<hostname.domain.org>\t<hostname>\n127.0.0.1\tlocalhost.localdomain\tlocalhost\t%s\n::1\tlocalhost.localdomain\tlocalhost\t%s"
 LIST_MODULES="nfsv4 atl1c forcedeth 8139too 8139cp r8169 e1000 e1000e broadcom tg3 sky2"
 
@@ -700,14 +698,14 @@ if (( $POST_P )); then
 	# 	Generate a syslinux entry and display it at the end of installation
 # 		bash files/genSysLinux-nfs.sh "$NAME_MACHINE" "$ARCH" "$DE" "$RACINE" > /tmp/syslinux_$NAME_MACHINE
 		final_message="$( bash files/extras/genloader.sh "$NAME_MACHINE" "$ARCH" "$DE" "$RACINE" )"
-	fi
 	
 # 	(( ! EXEC_DIRECT )) && [[ "$NETERFACE" != "nfsroot" ]] && [[ "$GRUB_INSTALL" == "" ]] && final_message="$( bash files/genGrub.sh "$RACINE" "$NAME_MACHINE" )"
-
+    else
 # 	GRUB
-	if (( $GRUB_P )) && [[ "$GRUB_INSTALL" != "" ]]; then
-		run_once anarchi_grub
-		final_message="$_grub_installed $GRUB_INSTALL"
+        if (( $GRUB_P )) && [[ "$GRUB_INSTALL" != "" ]]; then
+            run_once anarchi_grub
+            final_message="$_grub_installed $GRUB_INSTALL"
+        fi
 	fi
 	# 	Generate a grub entry and display it at the end of installation
 	(( ! EXEC_DIRECT )) && [[ "$NETERFACE" != "nfsroot" ]] && [[ "$GRUB_INSTALL" == "" ]] && bash files/extras/genGrub.sh "$RACINE" "$NAME_MACHINE" > /tmp/grub_$NAME_MACHINE && show_msg msg_n "32" "32" "$_grub_created" "\"/tmp/grub_$NAME_MACHINE\""
