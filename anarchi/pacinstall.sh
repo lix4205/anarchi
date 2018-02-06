@@ -429,7 +429,7 @@ source files/src/sources_files.sh $FILES2SOURCE
 # error "aaaa%ssasas" "____$FILE_COMMANDS"
 # error "$FILE_COMMANDS"
 echo -e "#\n#\n# Anarchi ($(date "+%Y/%m/%d-%H:%M:%S"))\n#\n#\n" >> $FILE_COMMANDS
-msg_n "${@}"
+# msg_n "${@}"
 # Set localisation
 load_language "$1" && LA_LOCALE="$1" && shift && [[ "${LA_LOCALE:${#LA_LOCALE}-5}" != "UTF-8" ]] && LA_LOCALE+=".UTF-8" 
 if (( ! EXEC_DIRECT )); then
