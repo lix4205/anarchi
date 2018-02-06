@@ -997,7 +997,7 @@ else
 fi
 
 # BEGIN GRAPHIC DRIVERSOFTS LANG and SYSTEMD SERVICE TO ENABLE 	
-[[ "$DE" != "0" ]] && SYSTD_TOENABLE+=" ${envir[dm_$DE]}"
+[[ "$DE" != "0" ]] && SYSTD_TOENABLE+=" ${envir[syst_$DE]}"
 [[ "$CONF_NET" == "nm" || "$CONF_NET" == "network-manager" || "$CONF_NET" =~ "networkmanager" || "$WIFI_NETWORK" =~ "networkmanager" ]] && write_package "$PACK_NETWORKMANAGER ${envir[netm_$DE]}" "files/de/common.conf" && SYSTD_TOENABLE+=" NetworkManager"
 [[ "$CONF_NET" == "connman" ]] && write_package "$PACK_CONNMAN" "files/de/common.conf" 
 # && SYSTD_TOENABLE+=" NetworkManager"
