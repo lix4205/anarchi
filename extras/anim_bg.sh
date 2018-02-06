@@ -52,7 +52,8 @@ function check_action() {
     [[ $? -gt 0 ]] && return 0 || return 1
 }
 
-function make_action() { echo_f "\n_$1_" }
+# echo "WTF" && exit 0
+function make_action() { echo_f "\n_$1_"; }
 
 function start_slide() {
     echo "Lancement..."
@@ -109,7 +110,8 @@ else
     # Selection automatique de l'environnement de bureau
     i=1;
     while [[ -z "$CMD_DE" ]] && [[ ! -z "${de[nom_de_$i]}" ]]; do
-        ps -e | grep -q "${de[nom_de_$i]}" && CMD_DE="${de[cmd_de_$i]}" && break
+        ps -aux | grep -v grep | grep -q "${de[nom_de_$i]}" && CMD_DE="${de[cmd_de_$i]}" && break
+#         ps -e | grep -q "${de[nom_de_$i]}" && CMD_DE="${de[cmd_de_$i]}" && break
         i=$((i+1))
     done
     [[ -z $CMD_DE ]] && echo "Impossible de trouver un environnement de bureau compatible."
