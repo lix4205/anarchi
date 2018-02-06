@@ -964,12 +964,16 @@ if ! mountpoint -q "$RACINE" && (( ! directory )); then
 	error "$_mountpoint" "$RACINE"
 fi
 
-# Check if we are on arch based distribution and ask for which distribution we want...
+# Check if we are on arch based distribution 
+# and ask to continue
 for ab in "${arch_base[@]}"; do
 	if cat /etc/issue | grep -q "$ab"; then
 		if ! rid_continue "Installer $ab ?"; then
 			ON_ARCH_BASE=1
 			SHOW_COMMANDE="$SHOW_COMMANDE -M"
+# 			LAUNCH_COMMAND_ARGS+=("-M")
+# 			die ${LAUNCH_COMMAND_ARGS[*]}
+			
 			break
 		fi
 	fi		
@@ -1023,7 +1027,7 @@ esac
 
 PACSTRAP_OPTIONS=""
 for i in $SHOW_COMMANDE; do
-	perso "$( echo "${i}" | sed "s/-//")" && COMMAND2LAUNCH="${COMMAND2LAUNCH//${i}/}" && PACSTRAP_OPTIONS+=" ${i}" && SHOW_COMMANDE="${SHOW_COMMANDE//${i}/}"
+	perso "$( echo "${i}" | sed "s/-//")" && { PACSTRAP_OPTIONS+=" ${i}" && SHOW_COMMANDE="${SHOW_COMMANDE//${i}/}"; } || { SHOW_COMMANDE+="${i}"; }
 	LAUNCH_COMMAND_ARGS+=("${i}")
 done
 
@@ -1081,8 +1085,9 @@ echo ${LAUNCH_COMMAND[*]} >> /tmp/history
 rid_exit "$_continue"
 msg_n "32" "$_go_on"
 
+# die "${COMMAND2LAUNCH[*]}"
 # exit
-run_or_su "${COMMAND2LAUNCH}"
+run_or_su "${COMMAND2LAUNCH[*]}"
 FIN=$?
 # msg_n "$FIN"
 # "
