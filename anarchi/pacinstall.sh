@@ -287,11 +287,13 @@ anarchi_nfsroot() {
 	SYSTD="${SYSTD//nfs-client.target/}"		
 	sed s/nfsmount/mount.nfs4/ "$RACINE/usr/lib/initcpio/hooks/net" > "$RACINE/usr/lib/initcpio/hooks/net_nfs4"
 	cp $RACINE/usr/lib/initcpio/install/net{,_nfs4}
-	sed -i "s/BINARIES=\"\"/BINARIES=\"\/usr\/bin\/mount.nfs4\"/g" $RACINE/etc/mkinitcpio.conf
+# 	sed -i "s/BINARIES=\"\"/BINARIES=\"\/usr\/bin\/mount.nfs4\"/g" $RACINE/etc/mkinitcpio.conf
+	sed -i "s/BINARIES=(/BINARIES=(\/usr\/bin\/mount.nfs4 /g" $RACINE/etc/mkinitcpio.conf
 # sed -i "s/MODULES=\"\"/MODULES=\"$LIST_MODULES\"/g" $RACINE/etc/mkinitcpio.conf
-    sed -i "s/MODULES=()/MODULES=($LIST_MODULES)/g" $RACINE/etc/mkinitcpio.conf
+    sed -i "s/MODULES=(/MODULES=($LIST_MODULES /g" $RACINE/etc/mkinitcpio.conf
 	sed -i "s/ fsck//" $RACINE/etc/mkinitcpio.conf
-	sed -i "s/HOOKS=\"/HOOKS=\"net_nfs4 /g" $RACINE/etc/mkinitcpio.conf
+# 	sed -i "s/HOOKS=\"/HOOKS=\"net_nfs4 /g" $RACINE/etc/mkinitcpio.conf
+	sed -i "s/HOOKS=(/HOOKS=(net_nfs4 /g" $RACINE/etc/mkinitcpio.conf
 #	LOG CONFIG FOR NFS
 	mv $RACINE/var/log $RACINE/var/_log
 # 	rmdir $RACINE/var/_log

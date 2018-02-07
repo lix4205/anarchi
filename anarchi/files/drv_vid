@@ -86,22 +86,7 @@ SYSTD_BLUEZ="bluetooth"
 SYSTD_CUPS="org.cups.cupsd"
 declare -A envir=( 
 # BEGIN 
-# 	[plasma]="plasma"
-# 	[gnome]="gnome"
-# # 	[kde4]="kde4"
-# 	[mate]="mate"
-# 	[lxde]="lxde"
-# 	[xfce]="xfce"
-# 	[lxqt]="lxqt"
-# 	[0]=""
-# 	[1]="plasma"
-# 	[2]="gnome"
-#       [3]="kde4 (dropped...)"
-#       [4]="xfce"
-#       [5]="mate"
-#       [6]="lxde"
-#       [7]="lxqt"
-	#Lightdm package
+    #Lightdm package
 	[pack_lightdm]="$PACK_LIGHTDM" 
       
 	#PLASMA 5
