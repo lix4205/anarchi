@@ -53,7 +53,7 @@ NETM_TOOLS="network-manager-applet"
 #
 # Desktop Environnement 
 #
-ENVIRONNEMENT=("plasma" "gnome" "mate" "cinnamon" "xfce" "lxde" "lxqt" "enlightenment" "fluxbox" )
+ENVIRONNEMENT=("plasma" "gnome" "mate" "cinnamon" "xfce" "lxde" "lxqt" "enlightenment" "fluxbox" "deepin")
 DISPLAYMANAGER=("sddm" "gdm" "lightdm" "lxdm" "slim" "nodm")
 PACK_LIGHTDM="lightdm lightdm-gtk-greeter"
 #

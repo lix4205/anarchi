@@ -77,6 +77,7 @@ declare -A de=(
     ["nom_de_5"]="cinnamon-session"
     ["nom_de_6"]="xfce.*-session"
     ["nom_de_7"]="fluxbox"
+    ["nom_de_8"]="startdde"
     
     ["cmd_de_1"]="lxslide \"-qt\""
     ["cmd_de_2"]="lxslide"
@@ -85,6 +86,7 @@ declare -A de=(
     ["cmd_de_5"]="${de[cmd_de_3]}"
     ["cmd_de_6"]="${de[cmd_de_3]}"
     ["cmd_de_7"]="fluxslide"
+    ["cmd_de_8"]="${de[cmd_de_3]}"
 )
 # Si aucun parametre, alors on lance le diapo avec $0 init
 if [[ -z "$ACTION" ]]; then
