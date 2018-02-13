@@ -257,15 +257,18 @@ anarchi_passwd() {
 	arch_chroot "useradd -m -g users -G wheel -s /bin/bash $USER_NAME" && ( [[ "$pass_root" == "sudo" ]] && set_sudo "$USER_NAME" || set_pass_chroot "root" "$pass_root" ) && set_pass_chroot "$USER_NAME" "$pass_user" || show_msg caution "$_pass_unchanged" "$USER_NAME"
 }
 
-anarchi_packages() {
-	show_msg msg "$_yaourt_install" "$yaourt_args"
-	show_msg decompte 9 "$_mi_install2" "$_go_on %s"
-
+anarchi_pacman_conf() {
 	# Write AUR config in pacman.conf
 	[[ "$ARCH" == "x64" ]] && exe ">>" $RACINE/etc/pacman.conf echo -e "$pacman_multilib" 
 # 	[[ "$ARCH" == "x64" ]] && exe echo -e "\n#Multilib configuration\n[multilib]\nInclude = /etc/pacman.d/mirrorlist" >> $RACINE/etc/pacman.conf
 	exe ">>" $RACINE/etc/pacman.conf echo -e "$pacman_yaourt" 
 # 	exe echo -e "\n#AUR configuration\n[archlinuxfr]\nServer = http://repo.archlinux.fr/\$arch\nSigLevel = Never" >> $RACINE/etc/pacman.conf
+}
+
+anarchi_packages() {
+	show_msg msg "$_yaourt_install" "$yaourt_args"
+	show_msg decompte 9 "$_mi_install2" "$_go_on %s"
+
 # 	Install others packages 
 	if (( ! EXEC_DIRECT )); then
 		sed -i "s/^[[:space:]]*SigLevel[[:space:]]*=.*$/SigLevel = Never/" "$PATH_SOFTS/pacman.conf.$ARCH"
@@ -675,6 +678,7 @@ if (( $LANG_P )); then
 fi
 if (( $PACK_P )); then
 	if (( $GRAP_P )); then	
+		run_once anarchi_pacman_conf
 		run_once anarchi_packages
 	fi
 

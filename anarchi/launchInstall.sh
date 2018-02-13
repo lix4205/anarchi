@@ -296,17 +296,17 @@ conf_net () {
 # 	IFACES="${IFACES}\n\t$((j+4))) $_net_dhcp"
 
 	
-	if [[ "$CONF_NET" == "" ]] || ( [[ -z ${valid_iface[${CONF_NET//dhcpcd@/}]} ]] &&  [[ -z ${valid_iface[${CONF_NET//wifi@/}]} ]] ); then
+	if [[ -z "$CONF_NET" ]] || ( [[ -z ${valid_iface[${CONF_NET//dhcpcd@/}]} ]] &&  [[ -z ${valid_iface[${CONF_NET//wifi@/}]} ]] ); then
 # 	if [[ "$CONF_NET" == "" || ( ! ${valid_iface[${CONF_NET//dhcpcd@/}]} -gt 0 && ! ${valid_iface[${CONF_NET//wifi@/}]} -gt 0 ) ]]; then
 		msg_nn "$_net"
 		printf "$(print_menu "${TFACES[@]}")\n"
-			while [[ "$CONF_NET" == "" || ( -z ${valid_iface[${CONF_NET//dhcpcd@/}]} && -z ${valid_iface[${CONF_NET//wifi@/}]} ) ]]; do 
-				[[  "$NUM_CONF_NET" != "" ]] && [[ -z ${valid_iface[$NUM_CONF_NET]} ]] && choix2error "$_valid_choice" "$NUM_CONF_NET" && clear_line
+			while [[ -z "$CONF_NET" || ( -z ${valid_iface[${CONF_NET//dhcpcd@/}]} && -z ${valid_iface[${CONF_NET//wifi@/}]} ) ]]; do 
+				[[  ! -z "$NUM_CONF_NET" ]] && [[ -z ${valid_iface[$NUM_CONF_NET]} ]] && choix2error "$_valid_choice" "$NUM_CONF_NET" && clear_line
 				NUM_CONF_NET=$(rid "33" "31" "$_choix_de" )
 # 				msg_n "%s--%s" "$CONF_NET" "${valid_iface[$NUM_CONF_NET]}"
 			[[ ! -z $NUM_CONF_NET ]] && [[ ! -z ${valid_iface[$NUM_CONF_NET]} ]] && CONF_NET="${valid_iface[$NUM_CONF_NET]}"
 			[[ "$NUM_CONF_NET" == "q" ]] && exit
-				[[ "$NUM_CONF_NET" == "" ]] && NUM_CONF_NET=$((j+4)) && break
+				[[ -z "$NUM_CONF_NET" ]] && NUM_CONF_NET=$((j+4)) && break
 				[[ "$NUM_CONF_NET" == "$((j+3))" || "$NUM_CONF_NET" == "$((j+2))" || "$NUM_CONF_NET" == "$((j+1))" ]] && break
 			done
 # 			CONF_NET="${valid_iface[$NUM_CONF_NET]}"
@@ -339,7 +339,7 @@ conf_net () {
 # 	fi
 	if echo "$CONF_NET" | grep -v nfsroot | grep -v dhcpcd | grep -v nm | grep -q wifi || echo "$CONF_NET" | grep -v nfsroot | grep -v dhcpcd | grep -v nm | grep -q wlp; then
 		WIFI_NETWORK=$( bash $DIR_SCRIPTS/files/extras/wifi-utils.sh ${CONF_NET//wifi@/} "get" ) || exit
-		[[ "$WIFI_NETWORK" == "" ]] && rid_continue "Voulez vous configurer le reseau ?" && conf_net "" 
+		[[ -z "$WIFI_NETWORK" ]] && rid_continue "Voulez vous configurer le reseau ?" && conf_net "" 
 		[[ "$WIFI_NETWORK" != "" ]] && msg_n "32" "32" "$_net_selected" "${valid_iface[${valid_iface[${CONF_NET//wifi@/}]}]}"
 		CONF_NET="${valid_iface[${valid_iface[${CONF_NET//wifi@/}]}]}"
 	else
@@ -379,7 +379,7 @@ graphic_setting () {
 	if [[ "$DRV_VID" == "nv" ]];then
 		msg_nn "$_graphic ( %s )" "Nvidia"
 		# TODO C'est quoi ce test !
-		while [[ $rep == "" ]] && ( [[ $rep != "1" ]] || [[ $rep != "2" ]] || [[ $rep != "3" ]] || [[ $rep != "4" ]] ); do
+		while [[ -z "$rep" ]] && ( [[ $rep != "1" ]] || [[ $rep != "2" ]] || [[ $rep != "3" ]] || [[ $rep != "4" ]] ); do
 			echo -e "$( print_menu "${_graphic_nv[@]}" )"
 # 			echo -e "$_graphic_nv"
 			rep=$(rid "$_choix_de")
@@ -396,8 +396,8 @@ graphic_setting () {
 	if [[ "$DRV_VID" != "" ]] && (( ${graphic_drv[$DRV_VID]} )); then
 		:
 	else
-		while [[ "$rep" == "" ]]; do
-			[[ "$DRV_VID" == "" ]] && msg_nn "$_graphic"
+		while [[ -z "$rep" ]]; do
+			[[ -z "$DRV_VID" ]] && msg_nn "$_graphic"
 # 			echo -e "$_graphic_list"
 # 			choix_edit=$(rid "Quel fichier éditer ?$( print_menu "${_graphic_list[@]}")\n\tq) Exit\n\t->")
 # exit
@@ -418,7 +418,7 @@ graphic_setting () {
 	[[ ! -z ${graphic_drv[name_$DRV_VID]} ]] && DRV_VID="${graphic_drv[name_$DRV_VID]}"
 # 	msg_n "${graphic_drv[${graphic_drv[name_$DRV_VID]}]}--->${graphic_drv[_${graphic_drv[name_$DRV_VID]}]}"
 	[[ "$DRV_VID" == "0" ]] && DE=0 && clear_line && caution "$_graphic_none"
-	[[ "$DRV_VID" != "0" ]] && [[ "$2" == "" ]] && msg_n "32" "32" "$_graphic_set" "${DRV_VID^}" && LAUNCH_COMMAND_ARGS+=("-g $DRV_VID");
+	[[ "$DRV_VID" != "0" ]] && [[ -z "$2" ]] && msg_n "32" "32" "$_graphic_set" "${DRV_VID^}" && LAUNCH_COMMAND_ARGS+=("-g $DRV_VID");
 
 }
 
@@ -435,7 +435,7 @@ choose_dm() {
 	done
 	if ! rid_continue "$_defaultdm" "${envir[syst_$DE]}"; then
         msg_nn "$_select_dm"
-        while [[ "$choix_dm" == "" ]] || [[ -z ${envir[dm_$choix_dm]} ]]; do
+        while [[ -z "$choix_dm" ]] || [[ -z ${envir[dm_$choix_dm]} ]]; do
             echo -e "$( print_menu "${DISPLAYMANAGER[@]}")"
             choix_dm=$(rid "$_choix_de")
         done
@@ -458,7 +458,7 @@ desktop_environnement () {
 	if [[ -z "$DE" ]] || [[ -z ${envir[$DE]} ]]; then 
 # 		msg_nn "$_env"
 		msg_nn "$(rid_menu -q "$_env" "${ENVIRONNEMENT[@]}")"
-		while [[ "$DE" == "" ]] || [[ -z ${envir[$DE]} ]]; do
+		while [[ -z "$DE" ]] || [[ -z ${envir[$DE]} ]]; do
 			[[ "$OPT" != "" ]] && [[ -z ${envir[$OPT]} ]] && choix2error "$_valid_choice" "$OPT" && clear_line
 			OPT=$( rid "\r  ->" "$_choix_de" )
 			[[ ! -z $OPT ]] && [[ ! -z ${envir[$OPT]} ]] && DE="${envir[$OPT]}"
@@ -478,7 +478,7 @@ desktop_environnement () {
 name_host () {
 	#NOM MACHINE
 	NAME_MACHINE=$1; [[ "$NAME_MACHINE" != "" ]] && msg_n "32" "32" "$_hostname_set" "$NAME_MACHINE"
-	while [[ $NAME_MACHINE == "" ]]; do
+	while [[ -z $NAME_MACHINE ]]; do
 		NAME_MACHINE=$(rid "$_hostname" )
 	done
 	LAUNCH_COMMAND_ARGS+=("-h $NAME_MACHINE");
@@ -488,7 +488,7 @@ name_host () {
 name_user () {
 	#NOM UTILISATEUR
 	USER_NAME=$1; [[ "$USER_NAME" != "" && $USER_NAME != "root" ]] && msg_n "32" "32" "$_username_set" "$USER_NAME"
-	while [[ $USER_NAME == "" || $USER_NAME == "root"  ]]; do
+	while [[ -z "$USER_NAME" || $USER_NAME == "root"  ]]; do
 		[[ $USER_NAME == "root" ]] && msg_n "31" "31" "User login can't be %s !" "$USER_NAME"
 		USER_NAME=$(rid "$_username " )
 	done
@@ -573,7 +573,7 @@ set_timezone() {
 	keymaps_xkb=("af_Afghani al_Albanian am_Armenian ara_Arabic at_German-Austria az_Azerbaijani ba_Bosnian bd_Bangla be_Belgian bg_Bulgarian br_Portuguese-Brazil bt_Dzongkha bw_Tswana by_Belarusian ca_French-Canada cd_French-DR-Congo ch_German-Switzerland cm_English-Cameroon cn_Chinese cz_Czech de_German dk_Danishee_Estonian epo_Esperanto es_Spanish et_Amharic fo_Faroese fi_Finnish fr_French gb_English-UK ge_Georgian gh_English-Ghana gn_French-Guinea gr_Greek hr_Croatian hu_Hungarian ie_Irish il_Hebrew iq_Iraqi ir_Persian is_Icelandic it_Italian jp_Japanese ke_Swahili-Kenya kg_Kyrgyz kh_Khmer-Cambodia kr_Korean kz_Kazakh la_Lao latam_Spanish-Lat-American lk_Sinhala-phonetic lt_Lithuanian lv_Latvian ma_Arabic-Morocco mao_Maori md_Moldavian me_Montenegrin mk_Macedonian ml_Bambara mm_Burmese mn_Mongolian mt_Maltese mv_Dhivehi ng_English-Nigeria nl_Dutch no_Norwegian np_Nepali ph_Filipino pk_Urdu-Pakistan pl_Polish pt_Portuguese ro_Romanian rs_Serbian ru_Russian se_Swedish si_Slovenian sk_Slovak sn_Wolof sy_Arabic-Syria th_Thai tj_Tajik tm_Turkmen tr_Turkish tw_Taiwanese tz_Swahili-Tanzania ua_Ukrainian us_English-US uz_Uzbek vn_Vietnamese za_English-S-Africa")
 	j=0
 
-	[[ "$1" == "" ]] && ( msg_n "$_set_keymapX11" && msg_nn2 "$_list_loading"  "X11 keymaps" ) || msg_nn2 "33" "$_x11k_checking" "$1"
+	[[ -z "$1" ]] && ( msg_n "$_set_keymapX11" && msg_nn2 "$_list_loading"  "X11 keymaps" ) || msg_nn2 "33" "$_x11k_checking" "$1"
 	loading &
 	PID_LOAD=$! && disown
 	for i in ${keymaps_xkb}; do
@@ -585,9 +585,9 @@ set_timezone() {
 		[[ "${i//_*/}" == "$1" ]] && break;
 	done
 	kill $PID_LOAD && printf "\b"
-	[[ "$1" == "" ]] && msg_nn_end "$_ok"
-	if [[ "$1" == "" || -z "${localisation_tab[$1]}" ]]; then
-		[[ "$1" != "" ]] && msg_nn_end "$_fail"
+	[[ -z "$1" ]] && msg_nn_end "$_ok"
+	if [[ -z "$1" || -z "${localisation_tab[$1]}" ]]; then
+		[[ ! -z "$1" ]] && msg_nn_end "$_fail"
 		echo -e ${XKBMAP_LIST} | column -t
 		while [[ -z "${langue[_$XKBMAP]}" ]]; do
 			XKBMAP=$( rid "$_choix_de $_pageup" )
@@ -869,7 +869,7 @@ if ls $FILE2SOURCE*.conf >> /dev/null 2>&1; then
 	rf="$(rid_1 "32" "32" "$_file_load (%s)  [ ${_yes^}/$_no/e ]" "$( ls $FILE2SOURCE*.conf )" )"
 	while [[ "${rf,,}" != "$_no" ]]; do
 		[[ "${rf,,}" == "e" ]] && nano $FILE2SOURCE*.conf
-		if [[ "${rf,,}" == "$_yes" ]] || [[ "$rf" == "" ]]; then
+		if [[ "${rf,,}" == "$_yes" ]] || [[ -z "$rf" ]]; then
 			FROM_FILE=1
 			source $FILE2SOURCE*.conf
 # 			Not in Arch based distributions...
@@ -945,7 +945,7 @@ if [[ ! $FROM_FILE ]]; then
 	RACINE=$1; shift
 	OTHER_PACKAGES="$@"
 	
-	[[ "$ARCH" == "" ]] && define_arch "$ARCH"
+	[[ -z "$ARCH" ]] && define_arch "$ARCH"
 
 	# check/set configuration
 	conf_net "$CONF_NET" 
@@ -1002,7 +1002,7 @@ fi
 [[ "$CONF_NET" == "connman" ]] && write_package "$PACK_CONNMAN" "files/de/common.conf" 
 # && SYSTD_TOENABLE+=" NetworkManager"
 
-[[ "$CONF_NET" != "none" && "$CONF_NET" != "nm" && "$CONF_NET" != "network-manager" && ! "$CONF_NET" =~ "networkmanager" && "$WIFI_NETWORK" == "" && "$CONF_NET" != "nfsroot" ]] && SYSTD_TOENABLE+=" $CONF_NET"
+[[ "$CONF_NET" != "none" && "$CONF_NET" != "nm" && "$CONF_NET" != "network-manager" && ! "$CONF_NET" =~ "networkmanager" && -z "$WIFI_NETWORK" && "$CONF_NET" != "nfsroot" ]] && SYSTD_TOENABLE+=" $CONF_NET"
 [[ "$WIFI_NETWORK" != "" ]] && net_wifi "$WIFI_NETWORK" && cp /tmp/$NET_CON files/
 # [[ "$DE" == "mate" ]] && rid_continue "Utiliser Mate GTK3 ?" && ( cd files/de/ && cat mate-gtk3.conf > mate.conf )
 

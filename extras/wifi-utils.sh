@@ -51,7 +51,7 @@ Wants=network.target
 
 [Service]
 Type=simple
-ExecStart=$(command -v /usr/bin/wpa_supplicant) -c/etc/wpa_supplicant/wpa_supplicant-%I.conf -i%I
+ExecStart=$(command -v wpa_supplicant) -c/etc/wpa_supplicant/wpa_supplicant-%I.conf -i%I
 
 [Install]
 Alias=multi-user.target.wants/wpa_supplicant@%i.service                    
@@ -74,7 +74,9 @@ function wpa_launch() {
 
 con_wpa_supplicant() {
     if rid_continue "Lancer la connexion ?"; then
-        netman_stop
+        netman_stop "NetworkManager"
+        netman_stop "wicd"
+        netman_stop "connman"
 
         WPA_PASS="$( wpa_passphrase $ESSID $(wpa_pass_ssl "$PASS_NET_CH") )"
         [[ ! $? -eq 0 ]] && die "Erreur lors de saisie du mot de passe !\n%s" "  -> $WPA_PASS"
@@ -104,17 +106,19 @@ con_wpa_supplicant() {
     fi
 	if [[ -z $1 ]]; then
         if [[ ! -e /etc/systemd/system/multi-user.target.wants/wpa_supplicant@$I_W.service ]] && rid_continue "Lancer \"%s\" au démarrage ?" "wpa_supplicant@$I_W"; then
-            if [[ ! -e /usr/lib/systemd/system/wpa_supplicant@.service ]]; then
-                if [[ -e /lib/systemd/system/wpa_supplicant.service ]]; then
+            if [[ ! -e /usr/lib/systemd/system/wpa_supplicant@.service ]] && [[ ! -e /lib/systemd/system/wpa_supplicant@.service ]]; then
+#                 if [[ -e /lib/systemd/system/wpa_supplicant.service ]]; then
 #                         cp /lib/systemd/system/wpa_supplicant.service /lib/systemd/system/wpa_supplicant\@.service
                     wpa_systemd >> /lib/systemd/system/wpa_supplicant\@.service && msg_n2 "Création du fichier /lib/systemd/system/wpa_supplicant\@.service"
-                else
-                    error "Impossible de trouver le service wpa_supplicant"
-                    return 1
-                fi
+#                 else
+#                     error "Impossible de trouver le service wpa_supplicant"
+#                     return 1
+#                 fi
             fi
             if ! systemctl is-enabled wpa_supplicant@$I_W  --quiet; then
-                netman_check
+                netman_check "NetworkManager"
+                netman_check "wicd"
+                netman_check "connman"
                 if exe systemctl enable wpa_supplicant@$I_W; then
                     if check_command -q "dhclient"; then
                         dhclient_systemd >> /etc/systemd/system/dhclient\@.service
@@ -167,15 +171,7 @@ set_wifi() {
 	return 0;
 }
 
-# TODO Utiliser iw...
-# Liste les réseau WiFi à proximité, puis demande à l'utilisateur d'en choisir un
-list_wifi() {
-	i=-1
-	I_W=$1
-	iw dev $I_W scan >> /tmp/err.log || die "\"iw dev $I_W scan\" à échouée !"
-	msg_nn "\r" "$_mess_wait" 
-	loading & 
-	PID_LOAD=$! 
+wifi_scan_iw() {
 	echo -e "#\n# Scan des réseaux disponible avec l'interface $I_W :\niw dev $I_W scan" >> $FILE_COMMANDS
 	while read -r; do
 		[[ $REPLY =~ ^BSS ]] && i=$((i+1)) && netw[valid_$i]=1
@@ -187,6 +183,48 @@ list_wifi() {
 		[[ $REPLY =~ "WPA2 Version" ]] && netw[sec_$i]="WPA2" && netw[sec_net_$i]="wpa"
 		[[ $REPLY =~ PSK* ]] && netw[auth_$i]="/PSK" 	
 	done < <(iw dev $I_W scan)
+}
+wifi_scan_iwlist() {
+	echo -e "#\n# Scan des réseaux disponible avec l'interface $I_W :\niwlist $I_W scan" >> $FILE_COMMANDS
+	while read -r; do
+		[[ $REPLY =~ Cell.* ]] && i=$((i+1)) && netw[valid_$i]=1
+		[[ $REPLY =~ ESSID.* ]] && netw[ssid_$i]="$( echo $REPLY | sed "s/.*ESSID/ESSID/g")" 
+		[[ $REPLY =~ Quality.* ]] && netw[qual_$i]="${REPLY//*Quality=/}" && netw[qual_$i]=${netw[qual_$i]//\/*/} 
+		[[ $REPLY =~ WEP* ]] && netw[sec_$i]="WEP" && netw[sec_net_$i]="wep"
+		[[ $REPLY =~ "WPA Version 1" ]] && netw[sec_$i]="WPA" && netw[sec_net_$i]="wpa"
+		[[ $REPLY =~ "WPA2 Version" ]] && netw[sec_$i]="WPA2" && netw[sec_net_$i]="wpa"
+		[[ $REPLY =~ PSK* ]] && netw[auth_$i]="/PSK" 	
+	done < <(iwlist $I_W scan)
+}
+
+# Liste les réseau WiFi à proximité, puis demande à l'utilisateur d'en choisir un
+list_wifi() {
+	i=-1
+	I_W=$1
+	if ! iw dev $I_W scan >> /tmp/err.log; then
+        error "\"iw dev $I_W scan\" a échouée !"
+        if check_command -q "iwlist" && iwlist $I_W scan >> /tmp/err.log; then
+            IWLIST=1
+        else
+            die "\"iwlist $I_W scan\" a échouée !"
+        fi
+    fi
+	msg_nn "\r" "$_mess_wait" 
+	loading & 
+	PID_LOAD=$! 
+	
+	[[ -z "$IWLIST" ]] && wifi_scan_iw || wifi_scan_iwlist
+# 	echo -e "#\n# Scan des réseaux disponible avec l'interface $I_W :\niw dev $I_W scan" >> $FILE_COMMANDS
+# 	while read -r; do
+# 		[[ $REPLY =~ ^BSS ]] && i=$((i+1)) && netw[valid_$i]=1
+# # 		[[ $REPLY =~ SSID.* ]] && netw[ssid_$i]="$( echo $REPLY | sed "s/.*ESSID/ESSID/g")" 
+# 		[[ $REPLY =~ SSID.* ]] && netw[ssid_$i]="${REPLY//*SSID: /}"
+# # 		[[ $REPLY =~ Quality.* ]] && netw[qual_$i]="${REPLY//*Quality=/}" && netw[qual_$i]=${netw[qual_$i]//\/*/} 
+# 		[[ $REPLY =~ WEP* ]] && netw[sec_$i]="WEP" && netw[sec_net_$i]="wep"
+# 		[[ $REPLY =~ "WPA" ]] && [[ $REPLY =~ "Version: 1" ]] && netw[sec_$i]="WPA" && netw[sec_net_$i]="wpa"
+# 		[[ $REPLY =~ "WPA2 Version" ]] && netw[sec_$i]="WPA2" && netw[sec_net_$i]="wpa"
+# 		[[ $REPLY =~ PSK* ]] && netw[auth_$i]="/PSK" 	
+# 	done < <(iw dev $I_W scan)
 	disown 
 	[[ ! -z $PID_LOAD ]] && kill $PID_LOAD 
 	[[ $i -eq -1 ]] && sleep 2 && list_wifi $I_W && exit
@@ -197,7 +235,7 @@ list_wifi() {
 	while [[ $j -lt $((i+1)) ]]; do
 		PSK="    "  && [[ ! -z ${netw[auth_$j]} ]] && PSK=${netw[auth_$j]}
 		SEC="   --   " && [[ ! -z ${netw[sec_$j]} ]] && SEC="${netw[sec_$j]}$PSK$([[ "${netw[sec_$j]}" == "WPA" ]] && printf " ")"
-# 		out_n " $( [[ $j -lt 9 ]] && echo " ")$((j+1)))"  "32" "32" "$((${netw[qual_$j]}*10/7))/100"
+		[[ ! -z "${netw[qual_$j]}" ]] && out_n " $( [[ $j -lt 9 ]] && echo " ")$((j+1)))"  "32" "32" "$((${netw[qual_$j]}*10/7))/100" ||
 		out_n " $( [[ $j -lt 9 ]] && echo " ")$((j+1)))" "32" "32"
 		printf " | $SEC | ">&2
 		msg_nn_end "${netw[ssid_$j]}"
