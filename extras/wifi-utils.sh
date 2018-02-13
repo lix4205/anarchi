@@ -172,6 +172,7 @@ set_wifi() {
 }
 
 wifi_scan_iw() {
+	i=-1
 	echo -e "#\n# Scan des réseaux disponible avec l'interface $I_W :\niw dev $I_W scan" >> $FILE_COMMANDS
 	while read -r; do
 		[[ $REPLY =~ ^BSS ]] && i=$((i+1)) && netw[valid_$i]=1
@@ -185,6 +186,7 @@ wifi_scan_iw() {
 	done < <(iw dev $I_W scan)
 }
 wifi_scan_iwlist() {
+	i=-1
 	echo -e "#\n# Scan des réseaux disponible avec l'interface $I_W :\niwlist $I_W scan" >> $FILE_COMMANDS
 	while read -r; do
 		[[ $REPLY =~ Cell.* ]] && i=$((i+1)) && netw[valid_$i]=1
@@ -199,7 +201,6 @@ wifi_scan_iwlist() {
 
 # Liste les réseau WiFi à proximité, puis demande à l'utilisateur d'en choisir un
 list_wifi() {
-	i=-1
 	I_W=$1
 	if ! iw dev $I_W scan >> /tmp/err.log; then
         error "\"iw dev $I_W scan\" a échouée !"
@@ -227,7 +228,8 @@ list_wifi() {
 # 	done < <(iw dev $I_W scan)
 	disown 
 	[[ ! -z $PID_LOAD ]] && kill $PID_LOAD 
-	[[ $i -eq -1 ]] && sleep 2 && list_wifi $I_W && exit
+	[[ -z ${netw[valid_0]} ]] && sleep 2 && list_wifi $I_W && exit
+# 	[[ $i -eq -1 ]] && sleep 2 && list_wifi $I_W && exit
 	clear_line
 	msg_nn "\r" "$_nb_net" "$((i+1))"
 	out_n "  0)"  "32" "32" "Ajouter un réseau caché\n"
