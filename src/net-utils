@@ -14,12 +14,18 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 netman_check() {
-	check_command -q "NetworkManager" && systemctl is-enabled NetworkManager --quiet && systemctl disable NetworkManager && caution "NetworkManager a été désactivé..."
+	check_command -q "NetworkManager" && 
+	systemctl is-enabled NetworkManager --quiet && 
+	systemctl disable NetworkManager && 
+	caution "NetworkManager a été désactivé..."
 	return $?
 }
 
 netman_stop() {
-	check_command -q "NetworkManager" && systemctl is-active NetworkManager --quiet && rid_continue "Couper NetworkManager ?" && systemctl stop NetworkManager
+	check_command -q "NetworkManager" && 
+	systemctl is-active NetworkManager --quiet && 
+	rid_continue "Couper NetworkManager ?" && 
+	systemctl stop NetworkManager
 	return $?
 }
 
@@ -60,18 +66,21 @@ list_if() {
 ask_if() {
 	local if2return;
 # 	printf "$IFACES" >&2
+# Si on ne trouve qu'une seule interface, alors inutile d'effectuer la selection...
+    [[ -z "${valid_iface[2]}" ]] && if2return=${valid_iface[1]//wifi@/} && rid_continue "Utiliser l'interface \"%s\" ?" "$if2return" && printf "$if2return" && return 0;
+#     die "${valid_iface[0]}"
 	msg_nn "$(rid_menu -q "Sélection d'une interface." "${TFACES[@]}")" 
 # 	msg_nn "\r" "Choisissez l'interface à utiliser. Type '%s' to quit" "q"
-	while [[ "$if2return" == "" ]]; do
+	while [[ -z "$if2return" ]]; do
 		if2return="$( rid "Choisissez l'interface à utiliser. Type '%s' to quit" "q" )"
 		[[ "$if2return" == "q" ]] && printf "\n" && return 1
-		if [[ "$if2return" != "" && ! -z ${valid_iface[$if2return]} ]]; then
+		if [[ ! -z "$if2return" && ! -z ${valid_iface[$if2return]} ]]; then
 			if2return=${valid_iface[$if2return]}
 			if2return=${if2return//wifi@/}
 			if2return=${if2return//dhcpcd@/}
 			msg_n "32" "32" "L'interface \"%s\" a ete choisi !" "$if2return"
 		else
-			 [[ "$if2return" != "" ]] && choix2error "L'interface \"%s\" n'existe pas !" "$if2return"
+			 [[ ! -z "$if2return" ]] && choix2error "L'interface \"%s\" n'existe pas !" "$if2return"
 			if2return=""
 		fi
 	done

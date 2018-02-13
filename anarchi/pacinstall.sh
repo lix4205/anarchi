@@ -300,7 +300,7 @@ anarchi_nfsroot() {
 	mkdir $RACINE/var/log
 	echo "tmpfs   /var/log        tmpfs     nodev,nosuid    0 0" >> $RACINE/etc/fstab
 # 	FOR CUPSD
-# 	echo "tmpfs   /var/spool/cups tmpfs     nodev,nosuid    0 0" >> /etc/fstab
+	echo -e "# For Cups :\n#tmpfs   /var/spool/cups tmpfs     nodev,nosuid    0 0" >> /etc/fstab
 
 	show_msg msg_n2 "$_recompile_nfs" && sleep 1
 	arch_chroot "mkinitcpio -p linux"	

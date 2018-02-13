@@ -17,88 +17,116 @@
 DIR_SRC="$(dirname $0)"
 source $DIR_SRC/src/sources_files.sh $DIR_SRC/src/bash-utils.sh $DIR_SRC/src/futil $DIR_SRC/src/net-utils $DIR_SRC/src/doexec
 
-out_netctl () {
-	cp $1/etc/netctl/examples/wireless-wpa $1/etc/netctl/$NAME_CON
-	sed -i "s/Description=.*/Description='Connection on access point $ESSID'/" $1/etc/netctl/$NAME_CON
-	sed -i "s/Interface=.*/Interface=$I_W/" $1/etc/netctl/$NAME_CON
-	sed -i "s/Security=.*/Security=$SEC_NET/" $1/etc/netctl/$NAME_CON
-	sed -i "s/ESSID=.*/ESSID='$ESSID'/" $1/etc/netctl/$NAME_CON
-	sed -i "s/Key=.*/Key='$(echo "$PASS_NET_CH" | openssl enc -base64 -d)'/" $1/etc/netctl/$NAME_CON
-# echo "Description='Connection on access point $ESSID'
-# Interface=$I_W
-# Connection=wireless
-# 
-# Security=$SEC_NET
-# IP=dhcp
-# 
-# ESSID='$ESSID'
-# # Prepend hexadecimal keys with \\\"
-# # If your key starts with \", write it as '\"\"<key>\"'
-# # See also: the section on special quoting rules in netctl.profile(5)
-# Key='$(echo "$PASS_NET_CH" | openssl enc -base64 -d)'
-# # Uncomment this if your ssid is hidden
-# #Hidden=yes
-# # Set a priority for automatic profile selection
-# #Priority=10
-# " 
+function dhclient_systemd() {
+cat <<EOF
+[Unit]
+Description=dhclient on %I
+Documentation=man:dhclient(8)
+Wants=network.target
+Before=network.target
+BindsTo=sys-subsystem-net-devices-%i.device
+After=sys-subsystem-net-devices-%i.device
+
+[Service]
+Type=forking
+PIDFile=/run/dhclient-%I.pid
+ExecStart=$(command -v dhclient) -pf /run/dhclient-%I.pid %I
+ExecStop=$(command -v dhclient) -r %I
+
+[Install]
+WantedBy=multi-user.target                 
+EOF
 }
+
+function wpa_systemd() {
+cat <<EOF
+[Unit]
+Description=WPA supplicant daemon (interface-specific version)
+Requires=sys-subsystem-net-devices-%i.device
+After=sys-subsystem-net-devices-%i.device
+Before=network.target
+Wants=network.target
+
+# NetworkManager users will probably want the dbus version instead.
+
+[Service]
+Type=simple
+ExecStart=$(command -v /usr/bin/wpa_supplicant) -c/etc/wpa_supplicant/wpa_supplicant-%I.conf -i%I
+
+[Install]
+Alias=multi-user.target.wants/wpa_supplicant@%i.service                    
+EOF
+}
+
+function wpa_pass_ssl() {
+    echo "$1" | openssl enc -base64 -d
+}
+
+# Lance l'authentification auprès de la box 
+# $1 : interface
+# $2 : SSID
+# $3 : password (ssl)
+function wpa_launch() {
+    exe wpa_supplicant -B -D nl80211,wext -i $1 -c <(echo "$2");
+    return $?;    
+}
+
 
 con_wpa_supplicant() {
-	[ ! -e $1/etc/wpa_supplicant/wpa_supplicant-$I_W.conf ] && echo "ctrl_interface=/run/wpa_supplicant
-update_config=1" > $1/etc/wpa_supplicant/wpa_supplicant-$I_W.conf
-	[ -e $1/etc/wpa_supplicant/wpa_supplicant-$I_W.conf ] && rid_continue "Ajouter le point d'accès \"%s\" dans \"%s\" ?" "$ESSID" "/etc/wpa_supplicant/wpa_supplicant-$I_W.conf" && wpa_passphrase $ESSID $(echo "$PASS_NET_CH" | openssl enc -base64 -d) >> $1/etc/wpa_supplicant/wpa_supplicant-$I_W.conf
-	if [[ -z $1 ]]; then
-		if check_command -q "systemctl"; then
-			if ! systemctl is-enabled wpa_supplicant@$I_W  --quiet && rid_continue "Lancer \"%s\" au démarrage ?" "${methods[$TYPE_CON]}"; then
-				netman_check
-				exe systemctl enable wpa_supplicant@$I_W && exe systemctl enable dhcpcd@$I_W
-			fi
-			if rid_continue "Lancer la connexion ?"; then
-				netman_stop
-				exe systemctl start wpa_supplicant@$I_W && exe systemctl start dhcpcd@$I_W
-			fi
-		else
-			wpa_supplicant -B -D nl80211,wext -i $I_W -c <(wpa_passphrase "$ESSID" "$(echo "$PASS_NET_CH" | openssl enc -base64 -d)")
-			check_command -q "dhclient" && dhclient $I_W || ( check_command -q "dhcpcd" && dhcpcd $I_W )
-		fi
-	fi
+    if rid_continue "Lancer la connexion ?"; then
+        netman_stop
 
-}
-
-con_netctl() {
-	out_netctl > $1/etc/netctl/$NAME_CON
+        WPA_PASS="$( wpa_passphrase $ESSID $(wpa_pass_ssl "$PASS_NET_CH") )"
+        [[ ! $? -eq 0 ]] && die "Erreur lors de saisie du mot de passe !\n%s" "  -> $WPA_PASS"
+        
+        msg_nn "Lancement de wpa_supplicant..."
+        wpa_launch "$I_W" "$WPA_PASS"
+        _has_connected=$?
+        if [[ $_has_connected -eq 0 ]]; then
+            msg_nn_end "ok"
+            msg_n "Attribution d'une adresse ip..."
+            check_command -q "dhclient" && exe dhclient $I_W || ( check_command -q "dhcpcd" && exe dhcpcd -b $I_W )
+        else
+            msg_nn_end "fail !"
+            error "La connexion au point d'accès a échouée !"
+            return $_has_connected;
+        fi
+    fi
+	if [[ ! -e $1/etc/wpa_supplicant/wpa_supplicant-$I_W.conf ]] || ! cat $1/etc/wpa_supplicant/wpa_supplicant-$I_W.conf | grep -q "$ESSID"; then
+        if rid_continue "Ajouter le point d'accès \"%s\" dans \"%s\" ?" "$ESSID" "/etc/wpa_supplicant/wpa_supplicant-$I_W.conf"; then
+            [[ ! -e $1/etc/wpa_supplicant/wpa_supplicant-$I_W.conf ]] && echo -e "ctrl_interface=/run/wpa_supplicant\nupdate_config=1" > $1/etc/wpa_supplicant/wpa_supplicant-$I_W.conf
+            if [[ -z "$WPA_PASS" ]]; then
+                WPA_PASS="$( wpa_passphrase $ESSID $(wpa_pass_ssl "$PASS_NET_CH") )"
+                [[ ! $? -eq 0 ]] && die "Erreur lors de saisie du mot de passe !\n%s" "  -> $WPA_PASS"
+            fi
+            echo "$WPA_PASS" >> $1/etc/wpa_supplicant/wpa_supplicant-$I_W.conf 
+        fi
+    fi
 	if [[ -z $1 ]]; then
-		if rid_continue "Lancer \"%s\" au démarrage ?" "$NAME_CON"; then
-			netman_check
-			exe netctl enable $NAME_CON
-		fi
-		if rid_continue "Lancer la connexion \"%s\" ?" "$NAME_CON"; then
-			netman_stop
-			exe netctl start $NAME_CON
-		fi
+        if [[ ! -e /etc/systemd/system/multi-user.target.wants/wpa_supplicant@$I_W.service ]] && rid_continue "Lancer \"%s\" au démarrage ?" "wpa_supplicant@$I_W"; then
+            if [[ ! -e /usr/lib/systemd/system/wpa_supplicant@.service ]]; then
+                if [[ -e /lib/systemd/system/wpa_supplicant.service ]]; then
+#                         cp /lib/systemd/system/wpa_supplicant.service /lib/systemd/system/wpa_supplicant\@.service
+                    wpa_systemd >> /lib/systemd/system/wpa_supplicant\@.service && msg_n2 "Création du fichier /lib/systemd/system/wpa_supplicant\@.service"
+                else
+                    error "Impossible de trouver le service wpa_supplicant"
+                    return 1
+                fi
+            fi
+            if ! systemctl is-enabled wpa_supplicant@$I_W  --quiet; then
+                netman_check
+                if exe systemctl enable wpa_supplicant@$I_W; then
+                    if check_command -q "dhclient"; then
+                        dhclient_systemd >> /etc/systemd/system/dhclient\@.service
+                        exe systemctl enable dhclient@$I_W
+                    elif check_command -q "dhcpcd"; then
+                        exe systemctl enable dhcpcd@$I_W
+                    fi
+                fi
+            fi
+        fi
 	fi
-}
-
-con_netman() {
-	if [[ -z $1 ]]; then
-		echo "nmcli dev wifi connect $ESSID password $(echo "$PASS_NET_CH" | openssl enc -base64 -d) iface $I_W"
-		if check_command -q "systemctl"; then
-			if ! systemctl is-enabled NetworkManager --quiet; then
-				rid_continue "Lancer \"%s\" au démarrage ?" "${methods[$TYPE_CON]}" && exe systemctl enable NetworkManager
-			fi
-			if rid_continue "Lancer la connexion ?"; then
-				! systemctl is-active NetworkManager --quiet && exe systemctl start NetworkManager
-				exe nmcli dev wifi con "$ESSID" password $(echo "$PASS_NET_CH" | openssl enc -base64 -d) name "$NAME_CON" && nmcli c mod "$NAME_CON" connection.permissions user
-			fi
-		else
-			:
-		fi
-	else
-		# It seems to be useless...
-# 		 && nmcli c mod \"$NAME_CON\" connection.permissions user && rm \$0
-		caution "Il n'est pas possible d'activer un nouveau profil de connexion tant que NetworkManager n'est pas lancé !\n%s Executez la commande suivante pour créer le profil une fois NetworkManager lancé...\nnmcli dev wifi con \"$ESSID\" password \$(echo \"$PASS_NET_CH\" | openssl enc -base64 -d)  name \"$NAME_CON\"\n%s Cette commande est disponible dans $1/init_nm.sh. Lancez bash \"%s\" pour l'executer." "==>" "==> " "$1/init_nm.sh"
-		echo -e "#!/bin/bash\nnmcli dev wifi con \"$ESSID\" password \$(echo \"$PASS_NET_CH\" | openssl enc -base64 -d)  name \"$NAME_CON\"" > $1/init_nm.sh
-	fi
+	return 0;
 }
 
 rid_wifi() {
@@ -107,38 +135,15 @@ rid_wifi() {
 	[[ ! -z $3 ]] && NAME_CON=$3 || die "Name connection not set !"
 	[[ ! -z $4 ]] && PATH_CON=$4
 	
-	case $TYPE_CON in
-		# WPA Supplicant
-		1|wpa_supplicant)
-			exist_install "wpa_supplicant" || {
-				error "wpa_supplicant n'est pas installé !"
-				msg_n "32" "32" "Veuillez installer \"%s\" avec \"%s\"" "wpa_supplicant" "pacman -S wpa_supplicant"
-				exit
-			}
-			con_wpa_supplicant "$PATH_CON"
-			
-		;;
-		# Netctl
-		2|netctl)
-			exist_install "wpa_supplicant" || {
-				error "wpa_supplicant n'est pas installé !"
-				msg_n "32" "32" "Veuillez installer \"%s\" avec \"%s\"" "wpa_supplicant" "pacman -S wpa_supplicant"
-				exit
-			}
-			con_netctl "$PATH_CON"
-		;;
-		# NetworkManager
-		3|networkmanager)
-			exist_install "NetworkManager" "networkmanager" || {
-				error "networkmanager n'est pas installé !"
-				msg_n "32" "32" "Veuillez installer \"%s\" avec \"%s\"" "networkmanager" "pacman -S networkmanager"
-				exit
-			}
-			con_netman "$PATH_CON"
-		;;
-	esac
-	return 0
+	exist_install "wpa_supplicant" || {
+        error "wpa_supplicant n'est pas installé !"
+        msg_n "32" "32" "Veuillez installer \"%s\" avec \"%s\"" "wpa_supplicant" "pacman -S wpa_supplicant"
+        exit 1
+    }
+    con_wpa_supplicant "$PATH_CON"
+	return $?;
 }
+
 
 set_wifi() {
 #	Recuperation du SSID
@@ -147,13 +152,13 @@ set_wifi() {
 		ESSID="$( get_text "$_choix_ssid" )" || return 1; 
 	fi
 #	Recuperation du password dans un fichier, sinon l'utilisateur est invite a le taper
-	if [[ -e /tmp/$ESSID ]]; then
-		rid_continue "$_pass_file" "/tmp/$ESSID"  && source /tmp/$ESSID && msg_n2 "$_read_pass" "/tmp/$ESSID"; 
+	if [[ -e /tmp/$ESSID ]] && rid_continue "$_pass_file" "/tmp/$ESSID"; then
+		source /tmp/$ESSID && msg_n2 "$_read_pass" "/tmp/$ESSID"; 
 	else
-		while [[ "$PASS_NET_CH" == "" ]]; do
+		while [[ -z "$PASS_NET_CH" ]]; do
 			PASS_NET_CH=$( clear_line && str2ssl "$(rid "$_pass_net"  "$ESSID" " " )" );
 			[[ "$PASS_NET_CH" == "$(str2ssl "q")" ]] && return 1
-			[[ "$PASS_NET_CH" == "" ]] && choix2error "$_error_pass" "sécurisé"
+			[[ -z "$PASS_NET_CH" ]] && choix2error "$_error_pass" "sécurisé"
 		done
 		clear_line
 # 		On genere le fichier /tmp/$ESSID contenant les infos nécessaires a la connexion.
@@ -167,18 +172,21 @@ set_wifi() {
 list_wifi() {
 	i=-1
 	I_W=$1
+	iw dev $I_W scan >> /tmp/err.log || die "\"iw dev $I_W scan\" à échouée !"
 	msg_nn "\r" "$_mess_wait" 
 	loading & 
 	PID_LOAD=$! 
+	echo -e "#\n# Scan des réseaux disponible avec l'interface $I_W :\niw dev $I_W scan" >> $FILE_COMMANDS
 	while read -r; do
-		[[ $REPLY =~ Cell.* ]] && i=$((i+1)) && netw[valid_$i]=1
-		[[ $REPLY =~ ESSID.* ]] && netw[ssid_$i]="$( echo $REPLY | sed "s/.*ESSID/ESSID/g")" 
-		[[ $REPLY =~ Quality.* ]] && netw[qual_$i]="${REPLY//*Quality=/}" && netw[qual_$i]=${netw[qual_$i]//\/*/} 
+		[[ $REPLY =~ ^BSS ]] && i=$((i+1)) && netw[valid_$i]=1
+# 		[[ $REPLY =~ SSID.* ]] && netw[ssid_$i]="$( echo $REPLY | sed "s/.*ESSID/ESSID/g")" 
+		[[ $REPLY =~ SSID.* ]] && netw[ssid_$i]="${REPLY//*SSID: /}"
+# 		[[ $REPLY =~ Quality.* ]] && netw[qual_$i]="${REPLY//*Quality=/}" && netw[qual_$i]=${netw[qual_$i]//\/*/} 
 		[[ $REPLY =~ WEP* ]] && netw[sec_$i]="WEP" && netw[sec_net_$i]="wep"
-		[[ $REPLY =~ "WPA Version 1" ]] && netw[sec_$i]="WPA" && netw[sec_net_$i]="wpa"
+		[[ $REPLY =~ "WPA" ]] && [[ $REPLY =~ "Version: 1" ]] && netw[sec_$i]="WPA" && netw[sec_net_$i]="wpa"
 		[[ $REPLY =~ "WPA2 Version" ]] && netw[sec_$i]="WPA2" && netw[sec_net_$i]="wpa"
 		[[ $REPLY =~ PSK* ]] && netw[auth_$i]="/PSK" 	
-	done < <(iwlist $I_W scan)
+	done < <(iw dev $I_W scan)
 	disown 
 	[[ ! -z $PID_LOAD ]] && kill $PID_LOAD 
 	[[ $i -eq -1 ]] && sleep 2 && list_wifi $I_W && exit
@@ -187,9 +195,10 @@ list_wifi() {
 	out_n "  0)"  "32" "32" "Ajouter un réseau caché\n"
 	j=0
 	while [[ $j -lt $((i+1)) ]]; do
-		PSK="    "  && [[ ${netw[auth_$j]} != "" ]] && PSK=${netw[auth_$j]}
-		SEC="   --   " && [[ ${netw[sec_$j]} != "" ]] && SEC="${netw[sec_$j]}$PSK$([[ "${netw[sec_$j]}" == "WPA" ]] && printf " ")"
-		out_n " $( [[ $j -lt 9 ]] && echo " ")$((j+1)))"  "32" "32" "$((${netw[qual_$j]}*10/7))/100"
+		PSK="    "  && [[ ! -z ${netw[auth_$j]} ]] && PSK=${netw[auth_$j]}
+		SEC="   --   " && [[ ! -z ${netw[sec_$j]} ]] && SEC="${netw[sec_$j]}$PSK$([[ "${netw[sec_$j]}" == "WPA" ]] && printf " ")"
+# 		out_n " $( [[ $j -lt 9 ]] && echo " ")$((j+1)))"  "32" "32" "$((${netw[qual_$j]}*10/7))/100"
+		out_n " $( [[ $j -lt 9 ]] && echo " ")$((j+1)))" "32" "32"
 		printf " | $SEC | ">&2
 		msg_nn_end "${netw[ssid_$j]}"
 		j=$((j+1))
@@ -205,57 +214,21 @@ list_wifi() {
 	ESSID=$(echo ${netw[ssid_$((NET_CH-1))]} | sed "s/.*ESSID:\"\(.*\)\"/\1/g" )
 	SEC_NET=${netw[sec_net_$((NET_CH-1))]}
 }
-
 conf_net_wifi () {
 	I_W=$1
-	OP=0
-# 	msg_n "Sélection de la méthode de connexion"
-# 	printf "\t1) WPA Supplicant (default)\n\t2) Netctl\n\t3) NetworkManager\n\t4) Extra\n" >&2
-	
-	msg_nn "$(rid_menu -q "Sélection de la méthode de connexion" "${valid_methods[@]}")" 
-	
-	while  [[ $OP -eq 0 ]]; do
-		OP=$( rid "Quel type de connexion ? Type '%s' to quit" "q" )
-		[[ "$OP" == "q" ]] && printf "\n" && exit 1
-		[[ "$OP" == "" ]] && OP=1
-		case $OP in 
-			1|2|3)
-				msg_n "32" "32" "%s sélectionné." "${methods[$OP]}"
-				list_wifi $I_W && set_wifi "$ESSID"
-				NAME_NETCTL=$( [[ "$OP" != "1" ]] && rid "Entrez un nom pour la connexion. (par defaut:%s)" "$SEC_NET-${ESSID,,}" || echo "$ESSID" ) && [[ $NAME_NETCTL  == "" ]] && NAME_NETCTL="$SEC_NET-${ESSID,,}"
-			;;
-# 			4) 
-# 				OP=0
-# 				msg_n "32" "32" "%s sélectionné." "Extras"
-# 				msg_n "Sélection de la méthode de connexion"
-# 				printf "\t1) Bridge Netctl\n\t2) Bridge Wifi\n\t3) Bonding Netctl\n\t4) Pxe DNSMASQ\n" >&2
-# 				while  [[ $OP -eq 0 ]]; do
-# 					OP=$( rid_1 "Quel type de connexion ? Type '%s' to quit" "q" )
-# 					[[ "$OP" == "q" ]] && printf "\n" && exit
-# 					[[ "$OP" == "" ]] && OP=1
-# 					case $OP in 
-# 						1|2|3|4)
-# 							msg_ntin "32" "32" "%s sélectionné." "${extras[$OP]}"
-# 						;;
-# 						*) OP=0
-# 						;;
-# 					esac
-# 				done
-# 				extras $OP
-# 				exit
-# 			;;
-			*) OP=0 ;;
-		esac
-	done
+	OP=1
+    list_wifi $I_W && set_wifi "$ESSID"
+	NAME_NETCTL=$( echo "$ESSID" ) && [[ -z $NAME_NETCTL ]] && NAME_NETCTL="$SEC_NET-${ESSID,,}"
 	[[ -z $2 ]] && rid_wifi "$ESSID" "$OP" "$NAME_NETCTL" || printf "${methods[_$OP]}@$NAME_NETCTL@$ESSID"
 }
 
 init_wifi() {
 	I_W="$1"
-	exist_install "iwlist" "wireless_tools" || {
-		error "%s n'est pas installé !" "wireless_tools"
-		msg_n "32" "32" "Veuillez installer \"%s\" avec \"%s\"" "wireless_tools" "pacman -S wireless_tools"
-		exit
+
+	exist_install "iw" "iw" || {
+		error "%s n'est pas installé !" "iw"
+		msg_n "32" "32" "Veuillez installer \"%s\" avec \"%s\"" "iw" "pacman -S iw"
+		exit 1
 	}
 
 	( [[ -z $I_W ]] || ( ! ip addr | grep -q "$I_W" && error "L'interface %s n'existe pas !" "$I_W")  ) && { I_W="$(list_if "wifi" && ask_if )"; [[ $? -gt 0 ]] && die "Aucun périphérique disponible ! $I_W"; }
@@ -273,14 +246,14 @@ init_wifi() {
 			if ! ip addr | grep -q $I_W | grep -q UP; then 
 				is_root 1 "/bin/bash $0 ${@}"
 			fi
-			msg_n "Attention : $( ip addr | grep $I_W  | grep UP )"
+# 			msg_n "Attention : $( ip addr | grep $I_W  | grep UP )"
 		else	
 			msg_nn_end "error !"
 			error "Impossible d'activer l'interface \"%s\" !" "$I_W"
 			die "Vérifier les drivers pour \"%s\" !" "$I_W"
 		fi
 	fi
-	msg_n "Attention 2: $( ip addr | grep $I_W  | grep UP )"
+# 	msg_n "Attention 2: $( ip addr | grep $I_W  | grep UP )"
 	conf_net_wifi $I_W $2
 }
 
@@ -313,6 +286,9 @@ _error_pass="La connexion \"%s\" nécessite un mot de passe !"
 
 I_W="wlan0"
 FILE_COMMANDS=/tmp/wifi_util_command
+# FILES_SYSTEMD=
+# FILES_DHCP=
+# FILES_WPA=
 echo -e "#\n#\n# Wifi utils ($(date "+%Y/%m/%d-%H:%M"))\n#\n#\n" >> $FILE_COMMANDS
 
 # $1 Interface wifi

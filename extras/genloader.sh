@@ -22,11 +22,29 @@ IP_SRV="192.168.1.5"
 [ "$5" != "" ] && IP_SRV="$5"
 
 cat <<EOF 
+  -> To boot by PXE (with NFS)
+You should know how to install and configure a PXE server with "dnsmasq" or something else...
+And a NFS server with /etc/exports...
+That's all...
+==> CAUTION
+# # Arch need to be bind mounted to boot fine...
+# # Create a directory somewhere in your nfs share,
+# mkdir /nfs/share/bindmount
+# # Mount your installation directory on this new directory,
+# mount -o bind $NFS_ROOT /nfs/share/bindmount
+# # and add the option "nohide" on your share line in /etc/exports 
+# /nfs/share/bindmount *([...],nohide)
+# # And reload nfs-server :
+# exportfs -arv"
+  
+  -> This is an EXAMPLE !!!
+# As said above, your can't use path "nfsroot="
+# you should change kernel "PXE/ARCH/boot/vmlinuz-linux" and initrd=* too...
 ==> FOR SYSLINUX WITH TFTP :
 label ${ARCH}_$DE
 menu label $NAME_MACHINE Arch Linux $ARCH $NAME_DE
 kernel $PATH_2_KERNEL/boot/vmlinuz-linux
-append initrd=$PATH_2_KERNEL/boot/initramfs-linux.img ip=:::::eth0:dhcp nfsroot=$IP_SRV:$NFS_ROOT/$PATH_2_KERNEL
+append initrd=$PATH_2_KERNEL/boot/initramfs-linux.img ip=:::::eth0:dhcp nfsroot=$IP_SRV:$NFS_ROOT
 text help
 Boot Arch Linux $ARCH with $DE on network
 endtext
@@ -38,7 +56,6 @@ append initrd=$PATH_2_KERNEL/boot/initramfs-linux-fallback.img ip=:::::eth0:dhcp
 text help
 Boot Arch Linux $ARCH Fallback image with $DE on network
 endtext
-
 
 EOF
 # 	final_message="FOR SYSLINUX WITH TFTP :

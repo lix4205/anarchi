@@ -125,11 +125,15 @@ run_or_su() {
 	if (( EUID == 0 )); then
 		${@}
 	else
-		rid_continue "$_switch_2_root" "${@}" && su -c "${@}"
+		rid_continue "$_switch_2_root" "${@}" && su_or_sudo "${@}"
+# 		su -c "${@}"
 	fi
 	return $?
 }
 
+su_or_sudo() {
+    sudo -v >> /dev/null && sudo "${@}" || su -c "${@}"
+}
 
 launchasroot() {
 	rid_continue "$_switch_2_root" "${@}" && su - -c "${@}"; return $?; 
