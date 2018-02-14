@@ -300,15 +300,16 @@ conf_net () {
 # 	if [[ "$CONF_NET" == "" || ( ! ${valid_iface[${CONF_NET//dhcpcd@/}]} -gt 0 && ! ${valid_iface[${CONF_NET//wifi@/}]} -gt 0 ) ]]; then
 		msg_nn "$_net"
 		printf "$(print_menu "${TFACES[@]}")\n"
-			while [[ -z "$CONF_NET" || ( -z ${valid_iface[${CONF_NET//dhcpcd@/}]} && -z ${valid_iface[${CONF_NET//wifi@/}]} ) ]]; do 
-				[[  ! -z "$NUM_CONF_NET" ]] && [[ -z ${valid_iface[$NUM_CONF_NET]} ]] && choix2error "$_valid_choice" "$NUM_CONF_NET" && clear_line
-				NUM_CONF_NET=$(rid "33" "31" "$_choix_de" )
+        while [[ -z "$CONF_NET" || ( -z ${valid_iface[${CONF_NET//dhcpcd@/}]} && -z ${valid_iface[${CONF_NET//wifi@/}]} ) ]]; do 
+            [[  ! -z "$NUM_CONF_NET" ]] && [[ -z ${valid_iface[$NUM_CONF_NET]} ]] && choix2error "$_valid_choice" "$NUM_CONF_NET" && clear_line
+            NUM_CONF_NET=$(rid "33" "31" "$_choix_de" )
 # 				msg_n "%s--%s" "$CONF_NET" "${valid_iface[$NUM_CONF_NET]}"
-			[[ ! -z $NUM_CONF_NET ]] && [[ ! -z ${valid_iface[$NUM_CONF_NET]} ]] && CONF_NET="${valid_iface[$NUM_CONF_NET]}"
-			[[ "$NUM_CONF_NET" == "q" ]] && exit
-				[[ -z "$NUM_CONF_NET" ]] && NUM_CONF_NET=$((j+4)) && break
-				[[ "$NUM_CONF_NET" == "$((j+3))" || "$NUM_CONF_NET" == "$((j+2))" || "$NUM_CONF_NET" == "$((j+1))" ]] && break
-			done
+            [[ ! -z $NUM_CONF_NET ]] && [[ ! -z ${valid_iface[$NUM_CONF_NET]} ]] && CONF_NET="${valid_iface[$NUM_CONF_NET]}"
+            [[ "$NUM_CONF_NET" == "q" ]] && exit
+            [[ -z "$NUM_CONF_NET" ]] && CONF_NET="${valid_iface[$((j+4))]}" && break;
+#             NUM_CONF_NET=$((j+4)) && break
+            [[ "$NUM_CONF_NET" == "$((j+3))" || "$NUM_CONF_NET" == "$((j+2))" || "$NUM_CONF_NET" == "$((j+1))" ]] && break
+        done
 # 			CONF_NET="${valid_iface[$NUM_CONF_NET]}"
 # 		while [[ "$DE" == "" ]] || [[ -z ${envir[$DE]} ]]; do
 # 			[[ "$OPT" != "" ]] && [[ -z ${envir[$OPT]} ]] && choix2error "$_valid_choice" "$OPT" && clear_line

@@ -248,6 +248,7 @@ anarchi_conf() {
 
 anarchi_custom() {
 # 	if (( $CUST_P )); then
+	    
 	(( ! interactive )) && arch_chroot "bash /tmp/files/custom" || chroot_new_root
 # 	fi
 }
@@ -669,7 +670,12 @@ fi
 
 # On ecrit les variables nécessaires à l'execution de custom
 # Et on copie les fichiers dans /tmp de la nouvelle install pour les executer en chroot		
-mochecho "$PATH_SOFTS/custom" && exe cp -a $PATH_SOFTS $RACINE/tmp/
+# mochecho "$PATH_SOFTS/custom" && 
+
+# On exporte les variables nécessaires à l'execution de custom pour les utiliser en chroot
+export NAME_USER=$USER_NAME LIST_SOFT SYSTD_SOFT="$SYSTD" GRUB_DISK=$GRUB_INSTALL NFSROOT=$NETERFACE DE DM X11_KEYMAP ARCH LIST_YAOURT
+# Et on copie les fichiers dans /tmp de la nouvelle install pour les executer en chroot		
+exe cp -a $PATH_SOFTS $RACINE/tmp/
 
 if (( $LANG_P )); then
 	run_once anarchi_conf

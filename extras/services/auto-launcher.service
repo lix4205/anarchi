@@ -5,7 +5,7 @@ After=systemd-user-sessions.service plymouth-quit.service
 [Service]
 ExecStart=/media/srv/dists-extra/extras/auto_launcher.sh %I 
 IgnoreSIGPIPE=no
-BusName=org.freedesktop.DisplayManager
+# BusName=org.freedesktop.DisplayManager
 TimeoutStopSec=0
 TimeoutStartSec=0
 
