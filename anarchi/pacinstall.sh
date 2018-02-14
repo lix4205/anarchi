@@ -75,7 +75,7 @@ set_sudo() {
 }
 
 set_pass_chroot () {
-	if [[ "$2" != "" ]]; then
+	if [[ ! -z "$2" ]]; then
 		(( ! $NO_EXEC )) && lix_chroot $RACINE "echo "$1:$2" | chpasswd"
 		# In log...
 		echo -e "chroot $RACINE /bin/bash <<EOF\necho "$1:$2" | chpasswd\nEOF" >> $FILE_COMMANDS
@@ -94,7 +94,7 @@ conf_net () {
 graphic_setting () {
 	if (( ! FROM_FILE )); then
 		DRV_VID=$1
-		if [[ "$DRV_VID" != "" ]] && [[ ${graphic_drv[$DRV_VID]} ]]; then
+		if [[ ! -z "$DRV_VID" ]] && [[ ${graphic_drv[$DRV_VID]} ]]; then
 			DRV_VID=${graphic_drv[_$DRV_VID]}
 		else
 			ERROR="\n\t\"-g GRAPHIC_DRIVER\" Invalid option : Graphics settings incorrect ! !$ERROR"
@@ -117,7 +117,7 @@ recup_files () {
 
 desktop_environnement () {
 	DE=$1
-	[[ "$GRUB_INSTALL" == "" ]] && GRUB_PACKAGES=""
+	[[ -z "$GRUB_INSTALL" ]] && GRUB_PACKAGES=""
 	[[ "$DRV_VID" != "0" ]] && ADD_PACKAGES=""
 	SOFTLIST="$BASE_PACKAGES $GRUB_PACKAGES $ADD_PACKAGES"
 	SYSTD="$( recup_files files/systemd.conf )"
@@ -143,25 +143,25 @@ get_pass () {
 	echo "$pass_user_tmp"
 }
 
-mochecho() {
-	local file_to_write=$1 VARS_TO_ADD="#!/bin/bash
-
-NAME_USER=\"$USER_NAME\"
-LIST_SOFT=\"$LIST_SOFT\"
-SYSTD_SOFT=\"$SYSTD\"
-GRUB_DISK=\"$GRUB_INSTALL\"
-NFSROOT=\"$NETERFACE\"
-DE=\"$DE\"
-DM=\"$DM\"
-X11_KEYMAP=\"$X11_KEYMAP\"
-ARCH=$ARCH
-LIST_YAOURT=\"$LIST_YAOURT\""
-	
-echo "$VARS_TO_ADD
-
-$( cat $file_to_write )" > $file_to_write
-# $( head -n $( cat $file_to_write | wc -l ) $file_to_write  )" > $file_to_write
-}
+# mochecho() {
+# 	local file_to_write=$1 VARS_TO_ADD="#!/bin/bash
+# 
+# NAME_USER=\"$USER_NAME\"
+# LIST_SOFT=\"$LIST_SOFT\"
+# SYSTD_SOFT=\"$SYSTD\"
+# GRUB_DISK=\"$GRUB_INSTALL\"
+# NFSROOT=\"$NETERFACE\"
+# DE=\"$DE\"
+# DM=\"$DM\"
+# X11_KEYMAP=\"$X11_KEYMAP\"
+# ARCH=$ARCH
+# LIST_YAOURT=\"$LIST_YAOURT\""
+# 	
+# echo "$VARS_TO_ADD
+# 
+# $( cat $file_to_write )" > $file_to_write
+# # $( head -n $( cat $file_to_write | wc -l ) $file_to_write  )" > $file_to_write
+# }
 
 
 # moche_install() { :
@@ -201,10 +201,10 @@ anarchi_create_root() {
 # Install base system
 anarchi_base() {
 	show_msg msg_n "33" "32" "$_pacman_install" "$RACINE"
-	if ! exe $QUIET pacman -r "$RACINE" --config=$( [[ $pacman_config != "" ]] && echo $pacman_config || echo $PATH_SOFTS/pacman.conf.$ARCH ) -Sy ; then
+	if ! exe $QUIET pacman -r "$RACINE" --config=$( [[ ! -z "$pacman_config" ]] && echo $pacman_config || echo $PATH_SOFTS/pacman.conf.$ARCH ) -Sy ; then
 		die "$_pacman_fail" "$RACINE"
 	fi
-	(( $EXEC_DIRECT )) && ERR_PKG="" && for i in $PKGS; do pacman -r "$RACINE" -Ss $i >> /dev/null || ERR_PKG="$ERR_PKG $i "; done; [[ $ERR_PKG != "" ]] && die "$_pkg_err\n\t%s" "$ERR_PKG ";
+	(( $EXEC_DIRECT )) && ERR_PKG="" && for i in $PKGS; do pacman -r "$RACINE" -Ss $i >> /dev/null || ERR_PKG="$ERR_PKG $i "; done; [[ ! -z "$ERR_PKG" ]] && die "$_pkg_err\n\t%s" "$ERR_PKG ";
 	if ! exe $QUIET pacman -r "$RACINE" -S --needed ${pacman_args[@]}; then
 		die "$_pacman_fail" "$RACINE"
 	fi
@@ -285,10 +285,41 @@ anarchi_packages() {
 
 }
 
+# anarchi_nfsroot() {
+# # 	CONFIGURATION NFS ROOT
+# # 	No need nfs-client service...
+# 	SYSTD="${SYSTD//nfs-client.target/}"		
+# 	arch_chroot "sed s/nfsmount/mount.nfs4/ /usr/lib/initcpio/hooks/net" 2> "$RACINE/usr/lib/initcpio/hooks/net_nfs4" &&
+# 	arch_chroot cp /usr/lib/initcpio/install/net{,_nfs4} &&
+# # 	sed -i "s/BINARIES=\"\"/BINARIES=\"\/usr\/bin\/mount.nfs4\"/g" $RACINE/etc/mkinitcpio.conf
+# 	arch_chroot "sed -i s/BINARIES=(/BINARIES=(\\/usr\\/bin\\/mount.nfs4 /g /etc/mkinitcpio.conf" &&
+# 	msg_n2 "Modification de BINARIES" && 
+# # sed -i "s/MODULES=\"\"/MODULES=\"$LIST_MODULES\"/g" $RACINE/etc/mkinitcpio.conf
+#     arch_chroot  "sed -i s/MODULES=\(/MODULES=\($LIST_MODULES\ /g /etc/mkinitcpio.conf" &&
+#     msg_n2 "Modification de MODULES" && 
+#     
+# 	arch_chroot "sed -i s/\ fsck// /etc/mkinitcpio.conf" &&
+# 	msg_n2 "Suppression de fsck" && 
+# # 	sed -i "s/HOOKS=\"/HOOKS=\"net_nfs4 /g" $RACINE/etc/mkinitcpio.conf
+# 	arch_chroot "sed -i s/HOOKS=\(/HOOKS=\(net_nfs4\ /g /etc/mkinitcpio.conf" &&
+# 	msg_n2 "Modification de HOOKS" && 
+# #	LOG CONFIG FOR NFS
+# 	arch_chroot "mv /var/log $RACINE/var/_log" &&
+# # 	rmdir $RACINE/var/_log
+# 	arch_chroot "mkdir /var/log" &&
+# 	echo "tmpfs   /var/log        tmpfs     nodev,nosuid    0 0" >> $RACINE/etc/fstab &&
+# # 	FOR CUPSD
+# 	echo -e "# For Cups :\n#tmpfs   /var/spool/cups tmpfs     nodev,nosuid    0 0" >> /etc/fstab &&
+# 
+# 	show_msg msg_n2 "$_recompile_nfs" && 
+# # 	sleep 1 
+# 	arch_chroot "mkinitcpio -p linux"	
+# 	return $?;
+# }
 anarchi_nfsroot() {
 # 	CONFIGURATION NFS ROOT
-# 	No need nfs-client service...
-	SYSTD="${SYSTD//nfs-client.target/}"		
+# 	No need nfs-client service... INUTILE !!!!
+# 	SYSTD="${SYSTD//nfs-client.target/}"		
 	sed s/nfsmount/mount.nfs4/ "$RACINE/usr/lib/initcpio/hooks/net" > "$RACINE/usr/lib/initcpio/hooks/net_nfs4"
 	cp $RACINE/usr/lib/initcpio/install/net{,_nfs4}
 # 	sed -i "s/BINARIES=\"\"/BINARIES=\"\/usr\/bin\/mount.nfs4\"/g" $RACINE/etc/mkinitcpio.conf
@@ -444,11 +475,11 @@ if (( ! EXEC_DIRECT )); then
 		rf="$(rid_1 "32" "32" "$_file_load (%s)  [ ${_yes^}/$_no/e ]" "$( ls $CONF2SOURCE* )" )"
 		while [[ "${rf,,}" != "$_no" ]]; do
 			[[ "${rf,,}" == "e" ]] && nano $CONF2SOURCE*.conf
-			if [[ "${rf,,}" == "$_yes" ]] || [[ "$rf" == "" ]]; then
+			if [[ "${rf,,}" == "$_yes" ]] || [[ -z "$rf" ]]; then
 				FROM_FILE=1
 				source $CONF2SOURCE*.conf
 		
-				[[ "$CACHE_PAQUET" != "" ]] && hostcache=1
+				[[ ! -z "$CACHE_PAQUET" ]] && hostcache=1
 				
 				for i in $PACSTRAP_OPTIONS; do
 					case $i in
@@ -527,14 +558,14 @@ if [[ ! $FROM_FILE ]]; then
 	OTHER_PACKAGES="$@"
 	
 	
-	[[ "$ARCH" == "" ]] && ERROR+="\n\t\"-a ARCHITECTURE\" Missing option" 
-	[[ "$ARCH" != "" && ( "$ARCH" != "x64" && "$ARCH" != "i686" ) ]] && ERROR+="\n\t\"-a ARCHITECTURE\" Invalid parameter : $ARCH" 
-	[[ "$NAME_MACHINE" == "" ]] && ERROR+="\n\t\"-h HOSTNAME\" Missing option" 
-	[[ "$USER_NAME" == "" ]] && ERROR+="\n\t\"-u USERNAME\" Missing option"
+	[[ -z "$ARCH" ]] && ERROR+="\n\t\"-a ARCHITECTURE\" Missing option" 
+	[[ ! -z "$ARCH" && ( "$ARCH" != "x64" && "$ARCH" != "i686" ) ]] && ERROR+="\n\t\"-a ARCHITECTURE\" Invalid parameter : $ARCH" 
+	[[ -z "$NAME_MACHINE" ]] && ERROR+="\n\t\"-h HOSTNAME\" Missing option" 
+	[[ -z "$USER_NAME" ]] && ERROR+="\n\t\"-u USERNAME\" Missing option"
 fi
 
 # die "%s" "$NO_EXEC"
-if [[ "$DRV_VID" == "" ]]; then
+if [[ -z "$DRV_VID" ]]; then
 	ERROR+="\n\t\"-g VIDEO_DRIVER\" Missing option"
 else
 	if [[ "$DRV_VID" != "0" ]]; then
@@ -549,7 +580,7 @@ fi
 [[ "$CONF_NET" != "0" ]] && conf_net "$CONF_NET"
 desktop_environnement "$DE"
 	
-[[ "$ERROR" != "" ]] && die "$_invalid_param :$ERROR"
+[[ ! -z "$ERROR" ]] && die "$_invalid_param :$ERROR"
 
 pacman_args=("$SOFTLIST")
 yaourt_args="yaourt $LIST_SOFT $OTHER_PACKAGES"
@@ -611,7 +642,7 @@ done
 fi
 (( $FREE_PACMAN )) && pacman_args+=(--noconfirm) && yaourt_args+=(--noconfirm)
 
-if [[ $pacman_config != "" ]]; then
+if [[ ! -z "$pacman_config" ]]; then
 	pacman_args+=(--config="$pacman_config")
 	yaourt_args+=(--config="$pacman_config")
 else
@@ -627,7 +658,7 @@ fi
 
 msg_n "32" "$_info_gen"  
 cat <<EOF
-	$( [[ "$GRUB_INSTALL" != "" ]] && echo "	$_info_grub \"$GRUB_INSTALL\" " ) 
+	$( [[ ! -z "$GRUB_INSTALL" ]] && echo "	$_info_grub \"$GRUB_INSTALL\" " ) 
 	"$RACINE" $_info_root" 
 	$_info_arch                			$ARCH
 	$_info_drv_vid         			$DRV_VID
@@ -643,11 +674,11 @@ msg_n "32" "$_info_complement"
 echo "$LIST_SOFT $OTHER_PACKAGES"
 msg_n "32" "$_info_systd"
 echo "$SYSTD"
-[[ "$LIST_YAOURT" != "" ]] && ( msg_n "32" "$_info_yaourt" ; echo "$LIST_YAOURT" ; )
+[[ ! -z "$LIST_YAOURT" ]] && ( msg_n "32" "$_info_yaourt" ; echo "$LIST_YAOURT" ; )
 
-[[ "$CACHE_PAQUET" != ""  ]] && ( msg_n "32" "$_info_cache" "$CACHE_PAQUET" )
-[[ "$pass_root" == "" ]] && caution "$_empty_pass" "root"
-[[ "$pass_user" == "" ]] && caution "31" "32" "$_empty_pass" "$USER_NAME"
+[[ ! -z "$CACHE_PAQUET" ]] && ( msg_n "32" "$_info_cache" "$CACHE_PAQUET" )
+[[ -z "$pass_root" ]] && caution "$_empty_pass" "root"
+[[ -z "$pass_user" ]] && caution "31" "32" "$_empty_pass" "$USER_NAME"
 rid_exit "$_continue"
 msg_n "32" "$_go_on"
 # END PAVE
@@ -694,7 +725,7 @@ fi
 if (( $POST_P )); then
 	show_msg msg_n "32" "32" "%s" "$_finalisation"
 	if (( $SERV_P )); then
-		if [[ $WIFI_NETWORK != "" ]]; then
+		if [[ ! -z "$WIFI_NETWORK" ]]; then
 			run_once anarchi_wifi
 		fi
 		run_once anarchi_systd
@@ -706,7 +737,8 @@ if (( $POST_P )); then
 		run_once anarchi_custom_user
 	fi
 	if [[ "$NETERFACE" == "nfsroot" ]]; then
-		run_once anarchi_nfsroot
+# 	TODO REGLER LE PROBLEME NFSROOT HORS ARCHLiNUX
+		(( ! $EXEC_DIRECT )) && run_once anarchi_nfsroot
 	# 	Generate a syslinux entry and display it at the end of installation
 # 		bash files/genSysLinux-nfs.sh "$NAME_MACHINE" "$ARCH" "$DE" "$RACINE" > /tmp/syslinux_$NAME_MACHINE
 		final_message="$( bash files/extras/genloader.sh "$NAME_MACHINE" "$ARCH" "$DE" "$RACINE" )"
@@ -714,13 +746,13 @@ if (( $POST_P )); then
 # 	(( ! EXEC_DIRECT )) && [[ "$NETERFACE" != "nfsroot" ]] && [[ "$GRUB_INSTALL" == "" ]] && final_message="$( bash files/genGrub.sh "$RACINE" "$NAME_MACHINE" )"
     else
 # 	GRUB
-        if (( $GRUB_P )) && [[ "$GRUB_INSTALL" != "" ]]; then
+        if (( $GRUB_P )) && [[ ! -z "$GRUB_INSTALL" ]]; then
             run_once anarchi_grub
             final_message="$_grub_installed $GRUB_INSTALL"
         fi
 	fi
 	# 	Generate a grub entry and display it at the end of installation
-	(( ! EXEC_DIRECT )) && [[ "$NETERFACE" != "nfsroot" ]] && [[ "$GRUB_INSTALL" == "" ]] && bash files/extras/genGrub.sh "$RACINE" "$NAME_MACHINE" > /tmp/grub_$NAME_MACHINE && show_msg msg_n "32" "32" "$_grub_created" "\"/tmp/grub_$NAME_MACHINE\""
+	(( ! EXEC_DIRECT )) && [[ "$NETERFACE" != "nfsroot" ]] && [[ -z "$GRUB_INSTALL" ]] && bash files/extras/genGrub.sh "$RACINE" "$NAME_MACHINE" > /tmp/grub_$NAME_MACHINE && show_msg msg_n "32" "32" "$_grub_created" "\"/tmp/grub_$NAME_MACHINE\""
 
 	cat <<EOF
 $final_message

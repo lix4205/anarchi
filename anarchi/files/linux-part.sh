@@ -269,7 +269,7 @@ if [[ $PID_COM -eq 0 ]]; then
 	
 	final_message="$( set_lang_chroot "$RACINE" )\n"
 # Genere un fichier de configuration pour grub (hors nfsroot)
-	[[ "$NETERFACE" != "nfsroot"  ]] && [[ "$GRUB_INSTALL" == ""  ]] && bash files/extras/genGrub.sh "$RACINE" "$NAME_MACHINE" > /tmp/grub_$NAME_MACHINE && msg_n "32" "32" "$_grub_created" "\"/tmp/grub_$NAME_MACHINE\""
+	[[ "$NETERFACE" != "nfsroot"  ]] && [[ -z "$GRUB_INSTALL" ]] && bash files/extras/genGrub.sh "$RACINE" "$NAME_MACHINE" > /tmp/grub_$NAME_MACHINE && msg_n "32" "32" "$_grub_created" "\"/tmp/grub_$NAME_MACHINE\""
 fi
 NO_EXEC=0
 # CAUTION gpg-agent can be running while we're unmounting the installation...

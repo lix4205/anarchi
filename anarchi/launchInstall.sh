@@ -153,7 +153,7 @@ notinarch_function() {
 
 # 	echo "./$NAME_SCRIPT2CALL -x $( echo $LA_LOCALE | sed "s/\..*//" ) -K $X11_KEYMAP -k $CONSOLEKEYMAP -z \"$TIMEZONE\" -a $ARCH -g $DRV_VID $( [[ "$DRV_VID" != "0" ]] && echo " -e $DE" ) -n $CONF_NET -h $NAME_MACHINE -u $USER_NAME $( [[ "$GRUB_INSTALL" != "" ]] && echo "-l $GRUB_INSTALL" ) $( [[ "$CACHE_PAQUET" != "" ]] && echo "-c $DEFAULT_CACHE_PKG" || echo "-c $ROOT_DIR_BOOTSTRAP$DEFAULT_CACHE_PKG" ) -C $ROOT_DIR_BOOTSTRAP$WORK_DIR/files/pacman.conf.$ARCH $SHOW_COMMANDE $ROOT_DIR_BOOTSTRAP $OTHER_PACKAGES" > "root.$UNAMEM/root/.bash_history"
 # 	echo 
-	COMMAND4ARCH="$WORK_DIR/$NAME_SCRIPT2CALL -x $( echo $LA_LOCALE | sed "s/\..*//" ) $QUIET$TESTING$PACSTRAP_OPTIONS $( [[ "$CACHE_PAQUET" != "" ]] && echo "-c $DEFAULT_CACHE_PKG" || echo "-c $ROOT_DIR_BOOTSTRAP$DEFAULT_CACHE_PKG" ) $( [[ "$GRUB_INSTALL" != "" ]] && echo "-l $GRUB_INSTALL" ) -a $ARCH -n $CONF_NET -g $DRV_VID $( [[ "$DRV_VID" != "0" ]] && echo " -e $DE" ) -D ${envir[dm_$DE]} -h $NAME_MACHINE -u $USER_NAME -z \"$TIMEZONE\" -k $CONSOLEKEYMAP -K $X11_KEYMAP -C $ROOT_DIR_BOOTSTRAP$WORK_DIR/files/pacman.conf.$ARCH  $ROOT_DIR_BOOTSTRAP $OTHER_PACKAGES"
+	COMMAND4ARCH="$WORK_DIR/$NAME_SCRIPT2CALL -x $( echo $LA_LOCALE | sed "s/\..*//" ) $QUIET$TESTING$PACSTRAP_OPTIONS $( [[ ! -z "$CACHE_PAQUET" ]] && echo "-c $DEFAULT_CACHE_PKG" || echo "-c $ROOT_DIR_BOOTSTRAP$DEFAULT_CACHE_PKG" ) $( [[ ! -z "$GRUB_INSTALL" ]] && echo "-l $GRUB_INSTALL" ) -a $ARCH -n $CONF_NET -g $DRV_VID $( [[ "$DRV_VID" != "0" ]] && echo " -e $DE" ) -D ${envir[syst_$DE]} -h $NAME_MACHINE -u $USER_NAME -z \"$TIMEZONE\" -k $CONSOLEKEYMAP -K $X11_KEYMAP -C $ROOT_DIR_BOOTSTRAP$WORK_DIR/files/pacman.conf.$ARCH  $ROOT_DIR_BOOTSTRAP $OTHER_PACKAGES"
 # 	echo $COMMAND4ARCH
 # 	COMMAND4ARCH="$WORK_DIR/$NAME_SCRIPT2CALL -x ${LAUNCH_COMMAND_ARGS[@]}  -C $ROOT_DIR_BOOTSTRAP$WORK_DIR/files/pacman.conf.$ARCH $ROOT_DIR_BOOTSTRAP $OTHER_PACKAGES" 
 # 	| sed "s/.UTF-8//" | sed "s/${CACHE_PAQUET//\//\\\/}/${DEFAULT_CACHE_PKG//\//\\\/}/"
@@ -341,7 +341,7 @@ conf_net () {
 	if echo "$CONF_NET" | grep -v nfsroot | grep -v dhcpcd | grep -v nm | grep -q wifi || echo "$CONF_NET" | grep -v nfsroot | grep -v dhcpcd | grep -v nm | grep -q wlp; then
 		WIFI_NETWORK=$( bash $DIR_SCRIPTS/files/extras/wifi-utils.sh ${CONF_NET//wifi@/} "get" ) || exit
 		[[ -z "$WIFI_NETWORK" ]] && rid_continue "Voulez vous configurer le reseau ?" && conf_net "" 
-		[[ "$WIFI_NETWORK" != "" ]] && msg_n "32" "32" "$_net_selected" "${valid_iface[${valid_iface[${CONF_NET//wifi@/}]}]}"
+		[[ ! -z "$WIFI_NETWORK" ]] && msg_n "32" "32" "$_net_selected" "${valid_iface[${valid_iface[${CONF_NET//wifi@/}]}]}"
 		CONF_NET="${valid_iface[${valid_iface[${CONF_NET//wifi@/}]}]}"
 	else
 # 		echo "$(msg_info "He") $j --> $CONF_NET::${CONF_NET//dhcpcd@/} - ${valid_iface[$NUM_CONF_NET]} : ${valid_iface[${CONF_NET//dhcpcd@/}]} == ${valid_iface[${valid_iface[${CONF_NET//dhcpcd@/}]}]}" >> /tmp/tmp.log
@@ -394,7 +394,7 @@ graphic_setting () {
 			esac
 		done
 	fi
-	if [[ "$DRV_VID" != "" ]] && (( ${graphic_drv[$DRV_VID]} )); then
+	if [[ ! -z "$DRV_VID" ]] && (( ${graphic_drv[$DRV_VID]} )); then
 		:
 	else
 		while [[ -z "$rep" ]]; do
@@ -460,7 +460,7 @@ desktop_environnement () {
 # 		msg_nn "$_env"
 		msg_nn "$(rid_menu -q "$_env" "${ENVIRONNEMENT[@]}")"
 		while [[ -z "$DE" ]] || [[ -z ${envir[$DE]} ]]; do
-			[[ "$OPT" != "" ]] && [[ -z ${envir[$OPT]} ]] && choix2error "$_valid_choice" "$OPT" && clear_line
+			[[ ! -z "$OPT" ]] && [[ -z ${envir[$OPT]} ]] && choix2error "$_valid_choice" "$OPT" && clear_line
 			OPT=$( rid "\r  ->" "$_choix_de" )
 			[[ ! -z $OPT ]] && [[ ! -z ${envir[$OPT]} ]] && DE="${envir[$OPT]}"
 			[[ "$OPT" == "q" ]] && exit
@@ -478,7 +478,7 @@ desktop_environnement () {
 }
 name_host () {
 	#NOM MACHINE
-	NAME_MACHINE=$1; [[ "$NAME_MACHINE" != "" ]] && msg_n "32" "32" "$_hostname_set" "$NAME_MACHINE"
+	NAME_MACHINE=$1; [[ ! -z "$NAME_MACHINE" ]] && msg_n "32" "32" "$_hostname_set" "$NAME_MACHINE"
 	while [[ -z $NAME_MACHINE ]]; do
 		NAME_MACHINE=$(rid "$_hostname" )
 	done
@@ -488,7 +488,7 @@ name_host () {
 
 name_user () {
 	#NOM UTILISATEUR
-	USER_NAME=$1; [[ "$USER_NAME" != "" && $USER_NAME != "root" ]] && msg_n "32" "32" "$_username_set" "$USER_NAME"
+	USER_NAME=$1; [[ ! -z "$USER_NAME" && $USER_NAME != "root" ]] && msg_n "32" "32" "$_username_set" "$USER_NAME"
 	while [[ -z "$USER_NAME" || $USER_NAME == "root"  ]]; do
 		[[ $USER_NAME == "root" ]] && msg_n "31" "31" "User login can't be %s !" "$USER_NAME"
 		USER_NAME=$(rid "$_username " )
@@ -611,7 +611,7 @@ set_timezone() {
 		msg_n "$_missing_file" "/usr/share/kbd/keymaps"
 		wait_arch_define
 	fi
-	[[ "$CONSOLEKEYMAP" != "" ]] &&  msg_nn2 "33" "$_console_k_checking" "$CONSOLEKEYMAP" || ( msg_n "$_set_consolek" && msg_nn2 "$_list_loading" )
+	[[ ! -z "$CONSOLEKEYMAP" ]] &&  msg_nn2 "33" "$_console_k_checking" "$CONSOLEKEYMAP" || ( msg_n "$_set_consolek" && msg_nn2 "$_list_loading" )
 	loading &
 	PID_LOAD=$! && disown
 	for i in $(ls -R "$2/usr/share/kbd/keymaps" | grep "map.gz" | sed 's/\.map.gz//g' | sort); do
@@ -887,7 +887,7 @@ if ls $FILE2SOURCE*.conf >> /dev/null 2>&1; then
 				esac	
 			done
 
-            LAUNCH_COMMAND_ARGS="$LA_LOCALE -a $ARCH $( [[ "$GRUB_INSTALL" != "" ]] && echo "-l $GRUB_INSTALL" ) $( [[ "$CACHE_PAQUET" != "" ]] && echo "-c $CACHE_PAQUET" ) $QUIET$TESTING -n $CONF_NET $( [[ "$DRV_VID" != "0" ]] && echo "-g $DRV_VID  -e $DE" ) -h $NAME_MACHINE -u $USER_NAME -z $TIMEZONE -k $CONSOLEKEYMAP -K $X11_KEYMAP"
+            LAUNCH_COMMAND_ARGS="$LA_LOCALE -a $ARCH $( [[ ! -z "$GRUB_INSTALL" ]] && echo "-l $GRUB_INSTALL" ) $( [[ ! -z "$CACHE_PAQUET" ]] && echo "-c $CACHE_PAQUET" ) $QUIET$TESTING -n $CONF_NET $( [[ "$DRV_VID" != "0" ]] && echo "-g $DRV_VID  -e $DE" ) -h $NAME_MACHINE -u $USER_NAME -z $TIMEZONE -k $CONSOLEKEYMAP -K $X11_KEYMAP"
 			break;
 		fi
 		rf="$(rid_1 "32" "32" "$_file_load (%s)  [ ${_yes^}/$_no/e ]" "$( ls $FILE2SOURCE* )" )"
@@ -1004,7 +1004,7 @@ fi
 # && SYSTD_TOENABLE+=" NetworkManager"
 
 [[ "$CONF_NET" != "none" && "$CONF_NET" != "nm" && "$CONF_NET" != "network-manager" && ! "$CONF_NET" =~ "networkmanager" && -z "$WIFI_NETWORK" && "$CONF_NET" != "nfsroot" ]] && SYSTD_TOENABLE+=" $CONF_NET"
-[[ "$WIFI_NETWORK" != "" ]] && net_wifi "$WIFI_NETWORK" && cp /tmp/$NET_CON files/
+[[ ! -z "$WIFI_NETWORK" ]] && net_wifi "$WIFI_NETWORK" && cp /tmp/$NET_CON files/
 # [[ "$DE" == "mate" ]] && rid_continue "Utiliser Mate GTK3 ?" && ( cd files/de/ && cat mate-gtk3.conf > mate.conf )
 
 # Display Manager
@@ -1036,7 +1036,7 @@ for i in $( grep -h -v ^# files/de/trans-packages.conf ); do
 	write_package "$i" files/de/common.conf
 done
 
-if [[ "${yaourt_envir[$DE]}" != "" ]]; then
+if [[ ! -z "${yaourt_envir[$DE]}" ]]; then
 	write_package "${yaourt_envir[$DE]}" files/de/yaourt.conf
 fi
 
