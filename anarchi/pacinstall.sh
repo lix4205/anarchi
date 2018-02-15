@@ -264,6 +264,7 @@ anarchi_pacman_conf() {
 # 	[[ "$ARCH" == "x64" ]] && exe echo -e "\n#Multilib configuration\n[multilib]\nInclude = /etc/pacman.d/mirrorlist" >> $RACINE/etc/pacman.conf
 	exe ">>" $RACINE/etc/pacman.conf echo -e "$pacman_yaourt" 
 # 	exe echo -e "\n#AUR configuration\n[archlinuxfr]\nServer = http://repo.archlinux.fr/\$arch\nSigLevel = Never" >> $RACINE/etc/pacman.conf
+    return 0
 }
 
 anarchi_packages() {
@@ -285,60 +286,9 @@ anarchi_packages() {
 
 }
 
-# anarchi_nfsroot() {
-# # 	CONFIGURATION NFS ROOT
-# # 	No need nfs-client service...
-# 	SYSTD="${SYSTD//nfs-client.target/}"		
-# 	arch_chroot "sed s/nfsmount/mount.nfs4/ /usr/lib/initcpio/hooks/net" 2> "$RACINE/usr/lib/initcpio/hooks/net_nfs4" &&
-# 	arch_chroot cp /usr/lib/initcpio/install/net{,_nfs4} &&
-# # 	sed -i "s/BINARIES=\"\"/BINARIES=\"\/usr\/bin\/mount.nfs4\"/g" $RACINE/etc/mkinitcpio.conf
-# 	arch_chroot "sed -i s/BINARIES=(/BINARIES=(\\/usr\\/bin\\/mount.nfs4 /g /etc/mkinitcpio.conf" &&
-# 	msg_n2 "Modification de BINARIES" && 
-# # sed -i "s/MODULES=\"\"/MODULES=\"$LIST_MODULES\"/g" $RACINE/etc/mkinitcpio.conf
-#     arch_chroot  "sed -i s/MODULES=\(/MODULES=\($LIST_MODULES\ /g /etc/mkinitcpio.conf" &&
-#     msg_n2 "Modification de MODULES" && 
-#     
-# 	arch_chroot "sed -i s/\ fsck// /etc/mkinitcpio.conf" &&
-# 	msg_n2 "Suppression de fsck" && 
-# # 	sed -i "s/HOOKS=\"/HOOKS=\"net_nfs4 /g" $RACINE/etc/mkinitcpio.conf
-# 	arch_chroot "sed -i s/HOOKS=\(/HOOKS=\(net_nfs4\ /g /etc/mkinitcpio.conf" &&
-# 	msg_n2 "Modification de HOOKS" && 
-# #	LOG CONFIG FOR NFS
-# 	arch_chroot "mv /var/log $RACINE/var/_log" &&
-# # 	rmdir $RACINE/var/_log
-# 	arch_chroot "mkdir /var/log" &&
-# 	echo "tmpfs   /var/log        tmpfs     nodev,nosuid    0 0" >> $RACINE/etc/fstab &&
-# # 	FOR CUPSD
-# 	echo -e "# For Cups :\n#tmpfs   /var/spool/cups tmpfs     nodev,nosuid    0 0" >> /etc/fstab &&
-# 
-# 	show_msg msg_n2 "$_recompile_nfs" && 
-# # 	sleep 1 
-# 	arch_chroot "mkinitcpio -p linux"	
-# 	return $?;
-# }
 anarchi_nfsroot() {
-# 	CONFIGURATION NFS ROOT
-# 	No need nfs-client service... INUTILE !!!!
-# 	SYSTD="${SYSTD//nfs-client.target/}"		
-	sed s/nfsmount/mount.nfs4/ "$RACINE/usr/lib/initcpio/hooks/net" > "$RACINE/usr/lib/initcpio/hooks/net_nfs4"
-	cp $RACINE/usr/lib/initcpio/install/net{,_nfs4}
-# 	sed -i "s/BINARIES=\"\"/BINARIES=\"\/usr\/bin\/mount.nfs4\"/g" $RACINE/etc/mkinitcpio.conf
-	sed -i "s/BINARIES=(/BINARIES=(\/usr\/bin\/mount.nfs4 /g" $RACINE/etc/mkinitcpio.conf
-# sed -i "s/MODULES=\"\"/MODULES=\"$LIST_MODULES\"/g" $RACINE/etc/mkinitcpio.conf
-    sed -i "s/MODULES=(/MODULES=($LIST_MODULES /g" $RACINE/etc/mkinitcpio.conf
-	sed -i "s/ fsck//" $RACINE/etc/mkinitcpio.conf
-# 	sed -i "s/HOOKS=\"/HOOKS=\"net_nfs4 /g" $RACINE/etc/mkinitcpio.conf
-	sed -i "s/HOOKS=(/HOOKS=(net_nfs4 /g" $RACINE/etc/mkinitcpio.conf
-#	LOG CONFIG FOR NFS
-	mv $RACINE/var/log $RACINE/var/_log
-# 	rmdir $RACINE/var/_log
-	mkdir $RACINE/var/log
-	echo "tmpfs   /var/log        tmpfs     nodev,nosuid    0 0" >> $RACINE/etc/fstab
-# 	FOR CUPSD
-	echo -e "# For Cups :\n#tmpfs   /var/spool/cups tmpfs     nodev,nosuid    0 0" >> /etc/fstab
-
-	show_msg msg_n2 "$_recompile_nfs" && sleep 1
-	arch_chroot "mkinitcpio -p linux"	
+    show_msg msg_n2 "$_recompile_nfs" 
+    arch_chroot "bash /tmp/files/nfs_root.sh"
 }
 anarchi_wifi() {
 #	 Creation des connexions WiFi avec wifi-netctl
@@ -424,7 +374,6 @@ grub_entries="\n\nmenuentry \"System shutdown\" {\n\techo \"System shutting down
 grub_entries+="\n\nmenuentry \"System restart\" {\n\techo \"System rebooting...\"\n\treboot\n}"
 sudo_entry="      ALL=(ALL) ALL"
 hosts_entry="#\n#\n# /etc/hosts: static lookup table for host names\n#\n#<ip-address>\t<hostname.domain.org>\t<hostname>\n127.0.0.1\tlocalhost.localdomain\tlocalhost\t%s\n::1\tlocalhost.localdomain\tlocalhost\t%s"
-LIST_MODULES="nfsv4 atl1c forcedeth 8139too 8139cp r8169 e1000 e1000e broadcom tg3 sky2"
 
 interactive_modes=("Installer les paquets de base" "Installer les paquets complémentaires" "Effectuer les opérations post installations (1) ( LANG, fstab, hostname, users/pass )" "Activer les services" "Installer grub sur le disque %s" "Executer les scripts de personnalisation" "Garder la main sur pacman" )
 
@@ -607,11 +556,12 @@ GRUB_P=0
 SERV_P=0
 # customization
 CUST_P=0
-FREE_PACMAN=0
+FREE_PACMAN=1
 show_imodes="$(rid_menu -q "Indiquez les opérations à effectuer (%s)." "${interactive_modes[@]}")"; 
 msg_nn "$show_imodes"
-while [[ -z $validmodes ]]; do
+while [[ -z "$validmodes" ]]; do
 	validmodes=$(rid "\t->");
+	[[ "$validmodes" == "q" ]] && exit 2;
 	for modes in ${validmodes}; do
 		if is_number $modes; then
 			case $modes in 
@@ -621,7 +571,7 @@ while [[ -z $validmodes ]]; do
 				4) SERV_P=1 ;; # services a activer
 				5) GRUB_P=1 ;; # install grub
 				6) CUST_P=1 ;; # Script perso
-				7) FREE_PACMAN=1 ;; # Garder la main sur pacman...
+				7) FREE_PACMAN=0 ;; # Garder la main sur pacman...
 				*) validmodes= ;;
 		# 		7) 
 		# 		8) 	
@@ -737,13 +687,10 @@ if (( $POST_P )); then
 		run_once anarchi_custom_user
 	fi
 	if [[ "$NETERFACE" == "nfsroot" ]]; then
-# 	TODO REGLER LE PROBLEME NFSROOT HORS ARCHLiNUX
-		(( ! $EXEC_DIRECT )) && run_once anarchi_nfsroot
-	# 	Generate a syslinux entry and display it at the end of installation
-# 		bash files/genSysLinux-nfs.sh "$NAME_MACHINE" "$ARCH" "$DE" "$RACINE" > /tmp/syslinux_$NAME_MACHINE
+#         Run NFS post installation configuration
+        run_once anarchi_nfsroot
+#         Generate a syslinux entry and display it at the end of installation
 		final_message="$( bash files/extras/genloader.sh "$NAME_MACHINE" "$ARCH" "$DE" "$RACINE" )"
-	
-# 	(( ! EXEC_DIRECT )) && [[ "$NETERFACE" != "nfsroot" ]] && [[ "$GRUB_INSTALL" == "" ]] && final_message="$( bash files/genGrub.sh "$RACINE" "$NAME_MACHINE" )"
     else
 # 	GRUB
         if (( $GRUB_P )) && [[ ! -z "$GRUB_INSTALL" ]]; then

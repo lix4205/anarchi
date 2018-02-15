@@ -111,7 +111,9 @@ download_img () {
 # 	LATEST="2015.12.01"
 	LATEST="$( date +%Y ).$( date +%m ).01"	
 	URL_BOOTSTRAP="http://mirrors.kernel.org/archlinux/iso/latest/archlinux-bootstrap-$LATEST-$UNAMEM.tar.gz"
-	MIRROR="https:\/\/fooo.biz\/archlinux"
+# 	MIRROR="https://archlinux.surlyjake.com/archlinux"
+	MIRROR="http://mirrors.evowise.com/archlinux/"
+	MIRROR="${MIRROR//\//\\\/}"
 	if [[ ! -e "$ROOT_BOOTSTRAP" ]]; then
 		msg_n "$_launch_dl"
 		if [[ ! -f "$FILE_BOOTSTRAP" ]]; then
@@ -147,9 +149,9 @@ notinarch_function() {
 	cp -RfL $DIR_SCRIPTS/{$NAME_SCRIPT2CALL,files} $WORK_DIR_BOOTSTRAP/ || die "$_install_copie"
 # 	ln -fs  "$DIR_SCRIPTS" $WORK_DIR_BOOTSTRAP/files/anarchi
 	# Décommenter un seul serveur
-# 	sed -i "s/#Server = $MIRROR/Server = $MIRROR/g" root.$UNAMEM/etc/pacman.d/mirrorlist
+	sed -i "s/#Server = $MIRROR/Server = $MIRROR/g" root.$UNAMEM/etc/pacman.d/mirrorlist
 	# Décommenter tout les serveurs
-	sed -i "s/^#Server/Server/g" root.$UNAMEM/etc/pacman.d/mirrorlist
+# 	sed -i "s/^#Server/Server/g" root.$UNAMEM/etc/pacman.d/mirrorlist
 
 # 	echo "./$NAME_SCRIPT2CALL -x $( echo $LA_LOCALE | sed "s/\..*//" ) -K $X11_KEYMAP -k $CONSOLEKEYMAP -z \"$TIMEZONE\" -a $ARCH -g $DRV_VID $( [[ "$DRV_VID" != "0" ]] && echo " -e $DE" ) -n $CONF_NET -h $NAME_MACHINE -u $USER_NAME $( [[ "$GRUB_INSTALL" != "" ]] && echo "-l $GRUB_INSTALL" ) $( [[ "$CACHE_PAQUET" != "" ]] && echo "-c $DEFAULT_CACHE_PKG" || echo "-c $ROOT_DIR_BOOTSTRAP$DEFAULT_CACHE_PKG" ) -C $ROOT_DIR_BOOTSTRAP$WORK_DIR/files/pacman.conf.$ARCH $SHOW_COMMANDE $ROOT_DIR_BOOTSTRAP $OTHER_PACKAGES" > "root.$UNAMEM/root/.bash_history"
 # 	echo 
@@ -478,7 +480,8 @@ desktop_environnement () {
 }
 name_host () {
 	#NOM MACHINE
-	NAME_MACHINE=$1; [[ ! -z "$NAME_MACHINE" ]] && msg_n "32" "32" "$_hostname_set" "$NAME_MACHINE"
+	NAME_MACHINE=$1; 
+	[[ ! -z "$NAME_MACHINE" ]] && msg_n "32" "32" "$_hostname_set" "$NAME_MACHINE"
 	while [[ -z $NAME_MACHINE ]]; do
 		NAME_MACHINE=$(rid "$_hostname" )
 	done
@@ -488,7 +491,8 @@ name_host () {
 
 name_user () {
 	#NOM UTILISATEUR
-	USER_NAME=$1; [[ ! -z "$USER_NAME" && $USER_NAME != "root" ]] && msg_n "32" "32" "$_username_set" "$USER_NAME"
+	USER_NAME=$1; 
+	[[ ! -z "$USER_NAME" && $USER_NAME != "root" ]] && msg_n "32" "32" "$_username_set" "$USER_NAME"
 	while [[ -z "$USER_NAME" || $USER_NAME == "root"  ]]; do
 		[[ $USER_NAME == "root" ]] && msg_n "31" "31" "User login can't be %s !" "$USER_NAME"
 		USER_NAME=$(rid "$_username " )
@@ -1028,8 +1032,9 @@ esac
 
 PACSTRAP_OPTIONS=""
 for i in $SHOW_COMMANDE; do
-	perso "$( echo "${i}" | sed "s/-//")" && { PACSTRAP_OPTIONS+=" ${i}" && SHOW_COMMANDE="${SHOW_COMMANDE//${i}/}"; } || { SHOW_COMMANDE+="${i}"; }
-	LAUNCH_COMMAND_ARGS+=("${i}")
+	perso "$( echo "${i}" | sed "s/-//")" && { PACSTRAP_OPTIONS+=" ${i}" && SHOW_COMMANDE="${SHOW_COMMANDE//${i}/}"; } 
+# 	|| { SHOW_COMMANDE+=" ${i}"; }
+	LAUNCH_COMMAND_ARGS+=(" ${i}")
 done
 
 for i in $( grep -h -v ^# files/de/trans-packages.conf ); do
