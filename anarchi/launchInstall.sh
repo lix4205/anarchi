@@ -86,10 +86,10 @@ EOF
 # BEGIN not in arch
 on_exit() {
     [[ ! -f "$FILE_BOOTSTRAP" ]] && remove_boostrap
-    [[ ! -z $LAUNCH_COMMAND_ARGS ]] && echo "$DIR_SCRIPTS/$NAME_SCRIPT ${LAUNCH_COMMAND_ARGS[@]} $RACINE $OTHER_PACKAGES" > /tmp/aaic-$( date "+%Y%m%d-%H-%M" ) && msg_ntin "32" "32" "$_util_command" "/tmp/aaic-$( date "+%Y%m%d-%H-%M" )"
+    [[ ! -z $LAUNCH_COMMAND_ARGS ]] && echo "$DIR_SCRIPTS/$NAME_SCRIPT" "${LAUNCH_COMMAND_ARGS[@]}" "${SHOW_COMMANDE[@]}" "$RACINE" "$OTHER_PACKAGES" > /tmp/aaic-$( date "+%Y%m%d-%H-%M" ) && msg_ntin "32" "32" "$_util_command" "/tmp/aaic-$( date "+%Y%m%d-%H-%M" )"
 cat <<EOF
 
-$DIR_SCRIPTS/$NAME_SCRIPT ${LAUNCH_COMMAND_ARGS[@]} $RACINE $OTHER_PACKAGES
+$DIR_SCRIPTS/$NAME_SCRIPT ${LAUNCH_COMMAND_ARGS[@]} ${SHOW_COMMANDE[@]} $RACINE $OTHER_PACKAGES
 
 EOF
 
@@ -891,7 +891,7 @@ if ls $FILE2SOURCE*.conf >> /dev/null 2>&1; then
 				esac	
 			done
 
-            LAUNCH_COMMAND_ARGS="$LA_LOCALE -a $ARCH $( [[ ! -z "$GRUB_INSTALL" ]] && echo "-l $GRUB_INSTALL" ) $( [[ ! -z "$CACHE_PAQUET" ]] && echo "-c $CACHE_PAQUET" ) $QUIET$TESTING -n $CONF_NET $( [[ "$DRV_VID" != "0" ]] && echo "-g $DRV_VID  -e $DE" ) -h $NAME_MACHINE -u $USER_NAME -z $TIMEZONE -k $CONSOLEKEYMAP -K $X11_KEYMAP"
+            LAUNCH_COMMAND_ARGS="$LA_LOCALE -a $ARCH $( [[ ! -z "$GRUB_INSTALL" ]] && echo "-l $GRUB_INSTALL" ) ${PACSTRAP_OPTIONS[@]} $( [[ ! -z "$CACHE_PAQUET" ]] && echo "-c $CACHE_PAQUET" ) $QUIET$TESTING -n $CONF_NET $( [[ "$DRV_VID" != "0" ]] && echo "-g $DRV_VID  -e $DE" ) -h $NAME_MACHINE -u $USER_NAME -z $TIMEZONE -k $CONSOLEKEYMAP -K $X11_KEYMAP"
 			break;
 		fi
 		rf="$(rid_1 "32" "32" "$_file_load (%s)  [ ${_yes^}/$_no/e ]" "$( ls $FILE2SOURCE* )" )"
@@ -908,16 +908,16 @@ if [[ ! $FROM_FILE ]]; then
 		usage
 		exit $(( $# ? 0 : 1 ))
 	fi
-	while getopts ':C:c:tdGiMpqTLsbHu:l:a:e:n:g:h:z:k:K:D:' flag; do
+	while getopts ':C:c:tGiMpqTLsbHu:l:a:e:n:g:h:z:k:K:D:' flag; do
 		case $flag in
 			C) SHOW_COMMANDE+=" -C $OPTARG"
 				LAUNCH_COMMAND_ARGS+=("-$flag $OPTARG") ;;
 			c) cache_packages "$OPTARG" ;; 
-			d)
-				directory=1
-				SHOW_COMMANDE+=" -d"
-				LAUNCH_COMMAND_ARGS+=("-$flag")
-			;;
+# 			d)
+# 				directory=1
+# 				SHOW_COMMANDE+=" -d"
+# 				LAUNCH_COMMAND_ARGS+=("-$flag")
+# 			;;
 			a) define_arch "$OPTARG" ;;
 			n) CONF_NET="$OPTARG" ;;
 			g) DRV_VID="$OPTARG" ;;
@@ -928,12 +928,19 @@ if [[ ! $FROM_FILE ]]; then
 			z) TIMEZONE="$OPTARG" ;;
 			h) NAME_MACHINE="$OPTARG" ;;
 			u) USER_NAME="$OPTARG" ;;
-			p|T|L|b|H|i|G|M|s|d)
-				SHOW_COMMANDE+=" -$flag"
+			p|T|L|b|H)
+				SHOW_COMMANDE+=" -$flag"			
 			;;
+			i|G|M|s|d)
+				LAUNCH_COMMAND_ARGS+=("-$flag")
+				PACSTRAP_OPTIONS+=(" -$flag")
+			;;
+# 			p|T|L|b|H|i|G|M|s|d)
+# 				SHOW_COMMANDE+=" -$flag"
+# 			;;
 			
 			q|t) 
-				perso "$flag";
+# 				perso "$flag";
 				LAUNCH_COMMAND_ARGS+=("-$flag")
 			;;
 			l) check_disk "$OPTARG" && GRUB_INSTALL="$OPTARG" && LAUNCH_COMMAND_ARGS+=("-l $GRUB_INSTALL") ;;
@@ -965,9 +972,9 @@ if [[ ! $FROM_FILE ]]; then
 	
 fi
 [[ -d $RACINE ]] || die "$_not_a_dir" "$RACINE"
-if ! mountpoint -q "$RACINE" && (( ! directory )); then
-	error "$_mountpoint" "$RACINE"
-fi
+# if ! mountpoint -q "$RACINE" && (( ! directory )); then
+# 	error "$_mountpoint" "$RACINE"
+# fi
 
 # Check if we are on arch based distribution 
 # and ask to continue
@@ -975,8 +982,8 @@ for ab in "${arch_base[@]}"; do
 	if cat /etc/issue | grep -q "$ab"; then
 		if ! rid_continue "Installer $ab ?"; then
 			ON_ARCH_BASE=1
-			SHOW_COMMANDE="$SHOW_COMMANDE -M"
-# 			LAUNCH_COMMAND_ARGS+=("-M")
+# 			SHOW_COMMANDE="$SHOW_COMMANDE -M"
+			LAUNCH_COMMAND_ARGS+=("-M")
 # 			die ${LAUNCH_COMMAND_ARGS[*]}
 			
 			break
@@ -1005,7 +1012,6 @@ fi
 [[ "$DE" != "0" ]] && SYSTD_TOENABLE+=" ${envir[syst_$DE]}"
 [[ "$CONF_NET" == "nm" || "$CONF_NET" == "network-manager" || "$CONF_NET" =~ "networkmanager" || "$WIFI_NETWORK" =~ "networkmanager" ]] && write_package "$PACK_NETWORKMANAGER ${envir[netm_$DE]}" "files/de/common.conf" && SYSTD_TOENABLE+=" NetworkManager"
 [[ "$CONF_NET" == "connman" ]] && write_package "$PACK_CONNMAN" "files/de/common.conf" 
-# && SYSTD_TOENABLE+=" NetworkManager"
 
 [[ "$CONF_NET" != "none" && "$CONF_NET" != "nm" && "$CONF_NET" != "network-manager" && ! "$CONF_NET" =~ "networkmanager" && -z "$WIFI_NETWORK" && "$CONF_NET" != "nfsroot" ]] && SYSTD_TOENABLE+=" $CONF_NET"
 [[ ! -z "$WIFI_NETWORK" ]] && net_wifi "$WIFI_NETWORK" && cp /tmp/$NET_CON files/
@@ -1030,11 +1036,9 @@ case $( echo "${LA_LOCALE,,}" | sed "s/_.*//" ) in
     ;;
 esac
 
-PACSTRAP_OPTIONS=""
+# PACSTRAP_OPTIONS=""
 for i in $SHOW_COMMANDE; do
-	perso "$( echo "${i}" | sed "s/-//")" && { PACSTRAP_OPTIONS+=" ${i}" && SHOW_COMMANDE="${SHOW_COMMANDE//${i}/}"; } 
-# 	|| { SHOW_COMMANDE+=" ${i}"; }
-	LAUNCH_COMMAND_ARGS+=(" ${i}")
+	perso "$( echo "${i}" | sed "s/-//")" 
 done
 
 for i in $( grep -h -v ^# files/de/trans-packages.conf ); do
@@ -1048,14 +1052,11 @@ fi
 if (( $REQUIRE_PACMAN )); then
 	notinarch_function 
 else
-# 	COMMAND2LAUNCH="$WORK_DIR/$NAME_SCRIPT2CALL $LA_LOCALE -K $X11_KEYMAP -k $CONSOLEKEYMAP -z \"$TIMEZONE\" -a $ARCH -n $CONF_NET $( [[ "$DRV_VID" != "0" ]] && echo "-g $DRV_VID  -e $DE" ) -h $NAME_MACHINE -u $USER_NAME $( [[ "$GRUB_INSTALL" != "" ]] && echo "-l $GRUB_INSTALL" ) $( [[ "$CACHE_PAQUET" != "" ]] && echo "-c $CACHE_PAQUET" ) $QUIET$TESTING$PACSTRAP_OPTIONS $RACINE $OTHER_PACKAGES"	
 	COMMAND2LAUNCH=("$WORK_DIR/$NAME_SCRIPT2CALL" "${LAUNCH_COMMAND_ARGS[@]}" "$RACINE" "$OTHER_PACKAGES")
 	search_pkg $OTHER_PACKAGES
 fi
 
-LAUNCH_COMMAND=("$DIR_SCRIPTS/$NAME_SCRIPT" "${LAUNCH_COMMAND_ARGS[@]}" "$RACINE" "$OTHER_PACKAGES")
-# LAUNCH_COMMAND="$DIR_SCRIPTS/$NAME_SCRIPT $LA_LOCALE -K $X11_KEYMAP -k $CONSOLEKEYMAP -z $TIMEZONE -a $ARCH -n $CONF_NET $( [[ "$DRV_VID" != "0" ]] && echo "-g $DRV_VID  -e $DE" ) -h $NAME_MACHINE -u $USER_NAME $( [[ "$GRUB_INSTALL" != "" ]] && echo "-l $GRUB_INSTALL" ) $( [[ "$CACHE_PAQUET" != "" ]] && echo "-c $CACHE_PAQUET" ) $QUIET$TESTING$SHOW_COMMANDE $PACSTRAP_OPTIONS $RACINE $OTHER_PACKAGES"
-
+LAUNCH_COMMAND=("$DIR_SCRIPTS/$NAME_SCRIPT" "${LAUNCH_COMMAND_ARGS[@]}" "${SHOW_COMMANDE[@]}" "$RACINE" "$OTHER_PACKAGES")
 
 echo "#!/bin/bash
 
@@ -1079,7 +1080,7 @@ TIMEZONE=$TIMEZONE
 X11_KEYMAP=$X11_KEYMAP
 
 PACSTRAP_OPTIONS=\"$PACSTRAP_OPTIONS\"
-SHOW_COMMANDE=\"$SHOW_COMMANDE \$PACSTRAP_OPTIONS\"
+SHOW_COMMANDE=\"$SHOW_COMMANDE\"
 OTHER_PACKAGES=\"$OTHER_PACKAGES\"
 " > $FILE2SOURCE$NAME_MACHINE-$LA_LOCALE.conf
 
@@ -1091,6 +1092,7 @@ echo ${LAUNCH_COMMAND[*]} >> /tmp/history
 rid_exit "$_continue"
 msg_n "32" "$_go_on"
 
+# caution "${LA}"
 # die "${COMMAND2LAUNCH[*]}"
 # exit
 run_or_su "${COMMAND2LAUNCH[*]}"

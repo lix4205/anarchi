@@ -118,25 +118,9 @@ chroot_add_resolv_conf() {
   chroot_add_mount /etc/resolv.conf "$resolv_conf" --bind
 }
 
-chroot_new_root () {
-	msg "$_chroot_newroot_msg" "$NAME_MACHINE"
-	arch_chroot "$RACINE" "/bin/bash"
-}
-
-set_lang_chroot () {
-	$exe sed -i "s/\#$LA_LOCALE/$LA_LOCALE/g" $1/etc/locale.gen
-	$exe ">" $1/etc/vconsole.conf echo "KEYMAP=\"$CONSOLEKEYMAP\"" 
-	$exe ">" $1/etc/locale.conf echo "LANG=\"$LA_LOCALE\"" 
-	[[ -z $2 ]]  && arch_chroot "$1" "locale-gen" || locale_gen "$1"
-# 	On force le TIMEZONE
-	arch_chroot "$1" "ln -fs /usr/share/zoneinfo/$TIMEZONE /etc/localtime"
-}
-
 #ADAPTED FROM AIS
 # chroot into new root
 arch_chroot () {
-# 	local ROOT_CHROOT="$( [ "$2" != "" ] && echo $2 || echo $RACINE )"
-# 	$exe chroot $ROOT_CHROOT ${1}
 	local ROOT_CHROOT="$1"
 	[[ ! -e $ROOT_CHROOT ]] && [[ ! -z "$RACINE" ]] && ROOT_CHROOT="$RACINE" || shift
 	$exe chroot $ROOT_CHROOT ${@}
@@ -148,7 +132,8 @@ lix_chroot () {
 	chroot $root /bin/bash <<EOF
 		${@}
 EOF
-	[[ ! -z $FILE_COMMANDS ]] && echo "${@}" >> $FILE_COMMANDS
+# On inscrit pas la commande dans le fichier...Z
+# 	[[ ! -z $FILE_COMMANDS ]] && echo "${@}" >> $FILE_COMMANDS
 }
 
 exe="" && [[ ! -z $FILE_COMMANDS ]] && exe="exe"

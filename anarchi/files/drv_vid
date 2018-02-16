@@ -46,7 +46,8 @@ _graphic_list=("intel (xf86-video-intel)" "NVidia" "ATI (xf86-video-ati)" "Virtu
 #
 # WiFi NETWORK 
 #
-WIFI_TOOLS="wireless_tools"
+# WIFI_TOOLS="wireless_tools"
+WIFI_TOOLS="wpa_supplicant iw"
 NETM_TOOLS="network-manager-applet"
 
 
@@ -131,7 +132,6 @@ declare -A envir=(
 # END
 )
 
-
 declare -A graphic_drv=(
 # BEGIN 
 	[0]=1
@@ -168,5 +168,3 @@ declare -A graphic_drv=(
 	[name_nv]="nvidia"
 # END
 )
-
-# msg_n "${envir[*]}"

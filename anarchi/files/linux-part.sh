@@ -13,7 +13,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-# BEGIN For locale_gen from ArchLinux /bin/locale-gen
+# BEGIN For locale_gen_chroot from ArchLinux /bin/locale-gen
 is_entry_ok() {
 	if [ -n "$locale" -a -n "$charset" ] ; then
 		true
@@ -23,7 +23,8 @@ is_entry_ok() {
 	fi
 }
 
-locale_gen() {
+locale_gen_chroot() {
+    msg_n "$1"
 	[[ -z "$1" ]] && die "Aucun répertoire défini !" 
 	set -e
 
@@ -90,7 +91,7 @@ recup_files () {
 desktop_environnement () {
 	DE=$1
 	SYSTD="$( recup_files files/systemd.conf )"
-	# TODO Verifier si [[ -e files/de/$DE.conf  ]] est utile...
+
 	LIST_SOFT="$( [[ -e files/de/$DE.conf  ]] && recup_files files/de/$DE.conf && printf " " && recup_files files/de/common.conf )"
 	LIST_YAOURT="$( recup_files files/de/yaourt.conf )"
 
@@ -180,16 +181,25 @@ show_pacman_for_lang_chroot() {
 anarchi_gpg_init() {
 	msg_n "32" "Initialisation des cles GPG avec \"pacman-key --init\""
 	caution "Cette opération peut prendre un certain temps !"
-	loading arch_chroot "$TMPROOT" "pacman-key --init" &
+	loading chroot "$TMPROOT" pacman-key --init &
 	PID_CHT=$!
 	ls -R / >/dev/null 2>&1 &
 	PID_LS=$!
     disown
 	wait $PID_CHT
 	kill $PID_LS >/dev/null 2>&1
-	loading arch_chroot "$TMPROOT" "pacman-key --populate" 
+	loading chroot "$TMPROOT" pacman-key --populate
 	pkill gpg-agent
 
+}
+
+anarchi_pac_Ss() {
+    ERR_PKG=
+    for i in $OTHER_PACKAGES; do 
+        chroot "$TMPROOT" pacman -Ss $i >> /dev/null || ERR_PKG="$ERR_PKG $i "; 
+    done;
+    [[ ! -z "$ERR_PKG" ]] && die "$_pkg_err\n\t%s" "$ERR_PKG ";
+    return 0;
 }
 # END
 
@@ -209,8 +219,6 @@ OLDROOT="$2"
 # NO_EXEC à 0 inscrires les commandes dans $FILE_COMMANDS
 TMP_NO_EXEC=$NO_EXEC
 NO_EXEC=0
-# FILE_COMMANDS=/tmp/anarchi_command
-# touch /tmp/anarchi_command
 
 # Entete du fichiers de commandes /tmp/anarchi_command
 echo -e "#\n#\n# Anarchi (From non based Arch ) ($(date "+%Y/%m/%d-%H:%M:%S"))\n#\n#\n" >> $FILE_COMMANDS
@@ -223,7 +231,13 @@ trap - EXIT
 # Prepare le chroot 
 chroot_setup "$TMPROOT" "$OLDROOT"  || die "$_failed_prepare_chroot" "$TMPROOT"
 # Initialise le langage
-set_lang_chroot "$TMPROOT" 1 >> /dev/null &
+$exe sed -i "s/\#$LA_LOCALE/$LA_LOCALE/g" "$TMPROOT/etc/locale.gen"
+$exe ">" $TMPROOT/etc/vconsole.conf echo "KEYMAP=\"$CONSOLEKEYMAP\"" 
+# msg_n "Chargement de la langue dans l'environnement chroote"
+$exe ">" $TMPROOT/etc/locale.conf echo "LANG=\"$LA_LOCALE\"" 
+	
+run_once locale_gen_chroot "$TMPROOT" >> /dev/null &
+# set_lang_chroot "$TMPROOT" 1 >> /dev/null &
 # Force la connexion Internet sur la "route" principale
 echo "nameserver $( routel | grep default.*[0..9] | awk '{print $2}' )" >> $TMPROOT/etc/resolv.conf
 sleep .2
@@ -235,12 +249,17 @@ cp files/pacman.conf.$ARCH $OLDROOT/pacman.conf.$ARCH
 mkdir -m 0755 -p $OLDROOT$DEFAULT_CACHE_PKG
 [[ -e $FILE2SOURCE*.conf ]] && cp $FILE2SOURCE*.conf $TMPROOT/tmp/
 
+# Initialise pacman database
+run_once anarchi_pac_sy >> /dev/null
+# Check if packages exist in pacman database
+#     df -a | grep $TMPROOT
+[[ ! -z "$OTHER_PACKAGES" ]] && run_once anarchi_pac_Ss
+
 # BEGIN Recuperation des paquets de langue 
 # inscris dans le fichier /tmp/install/trans_packages
 # (pour kde, libreoffice, thunderbird et firefox)
 # NOTE La fonction set_trans_package se trouve dans files/trans_packages
 if [[ -e /tmp/install/trans_packages ]]; then
-    run_once anarchi_pac_sy >> /dev/null
     while read -r; do
         write_package "$(show_pacman_for_lang_chroot $(set_trans_package "$REPLY" "$LA_LOCALE"))" "files/de/common.conf"
     done< <( cat "/tmp/install/trans_packages" )
@@ -267,7 +286,7 @@ if [[ $PID_COM -eq 0 ]]; then
 # On réecrit /etc/fstab pour monter les disques avec UUID
 	set_uuid_fstab "$RACINE"
 	
-	final_message="$( set_lang_chroot "$RACINE" )\n"
+# 	final_message="$( set_lang_chroot "$RACINE" )\n"
 # Genere un fichier de configuration pour grub (hors nfsroot)
 	[[ "$NETERFACE" != "nfsroot"  ]] && [[ -z "$GRUB_INSTALL" ]] && bash files/extras/genGrub.sh "$RACINE" "$NAME_MACHINE" > /tmp/grub_$NAME_MACHINE && msg_n "32" "32" "$_grub_created" "\"/tmp/grub_$NAME_MACHINE\""
 fi

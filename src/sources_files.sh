@@ -13,13 +13,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-# dirname "$0"
-# echo $0
-
+# Source files passed in arguments
 [[ ! -z "$DIR_SCRIPTS" ]] && _dir_src="$DIR_SCRIPTS/src/"
 [[ ! -z "$DIR_SCR" ]] && _dir_src="$DIR_SCR/src/"
 
-# echo $DIR_SCR
 for _file in "$@"; do 
 	if [[ -e  "$_file" ]]; then
 		source "$_file";  
@@ -33,5 +30,3 @@ for _file in "$@"; do
 	fi
 
 done;
-# [[ ! -z "$_dir_src$_file" ]] && decompte 2 "Okay !" "Au revoir"
-# exit 0

@@ -74,6 +74,8 @@ chroot2exec () {
 # msg_n $ROOT
 # msg_n "arch_chroot \"${1}\" $ROOT----%s" "${CHROOT_ACTIVE_MOUNTS}"
 	arch_chroot "${1}" $ROOT
+	shift
+	[[ ! -z $FILE_COMMANDS ]] && echo "${@}" >> $FILE_COMMANDS
 # 	lix_chroot $ROOT "${1}" 
 # 	echo $?
 # 	chroot $ROOT_CALUX ${1}

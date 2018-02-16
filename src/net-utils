@@ -13,23 +13,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-# netman_check() {
-# 	check_command -q "NetworkManager" && 
-# 	systemctl is-enabled NetworkManager --quiet && 
-# 	systemctl disable NetworkManager && 
-# 	caution "NetworkManager a été désactivé..."
-# 	return $?
-# }
-# 
-# netman_stop() {
-# 	check_command -q "NetworkManager" && 
-# 	systemctl is-active NetworkManager --quiet && 
-# 	rid_continue "Couper NetworkManager ?" && 
-# 	systemctl stop NetworkManager
-# 	return $?
-# }
-
-# Check for Network manager...
+# Check for Network manager service enabled and disable it...
 netman_check() {
 	check_command -q "$1" && 
 	systemctl is-enabled $1 --quiet && 
@@ -38,6 +22,7 @@ netman_check() {
 	return $?
 }
 
+# Check for Network manager service running and stop it...
 netman_stop() {
 	check_command -q "$1" && 
 	systemctl is-active $1 --quiet && 
@@ -49,7 +34,6 @@ netman_stop() {
 list_if() {
 	IFACES=""
 	TFACES=()
-# 	valid_iface=()
 # 	The command "lspci | grep Ethernet | awk '{print $1}' | sed "s/0\(.*\):0/enp\1s/" | sed "s/\..*//"" list all network interfaces and transform them into udev terminology
 # 	for i in $(ip addr | egrep '^[^ ]' |  awk '{print $2}' | sed "s/://g"  ); do
 
@@ -82,13 +66,10 @@ list_if() {
 
 ask_if() {
 	local if2return;
-# 	printf "$IFACES" >&2
 # Si on ne trouve qu'une seule interface, alors inutile d'effectuer la selection...
     [[ -z "${valid_iface[2]}" ]] && if2return=${valid_iface[1]//wifi@/} && rid_continue "Utiliser l'interface \"%s\" ?" "$if2return" && printf "$if2return" && return 0;
-#     die "${valid_iface[0]}"
     if2return=""
 	msg_nn "$(rid_menu -q "Sélection d'une interface." "${TFACES[@]}")" 
-# 	msg_nn "\r" "Choisissez l'interface à utiliser. Type '%s' to quit" "q"
 	while [[ -z "$if2return" ]]; do
 		if2return="$( rid "Choisissez l'interface à utiliser. Type '%s' to quit" "q" )"
 		[[ "$if2return" == "q" ]] && printf "\n" && return 1
@@ -102,9 +83,8 @@ ask_if() {
 			if2return=""
 		fi
 	done
-	printf $if2return
-	return 0
-
+	printf $if2return;
+	return 0;
 }
 
 declare -A valid_iface

@@ -13,8 +13,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-# This files should contains usefull fonctions
-
 # Count the "1" in a IPv4 adress
 # eg : $1=255.255.255.0 return 24
 mask2bits() { local count=0; for nb in $(echo "$1" | sed "s/\./ /g"); do count=$((count+$(($(echo "obase=2;$nb" | bc | sed "s/0//g" | wc -m)-1)))); done; echo $count; }
@@ -26,28 +24,14 @@ isIPv4() { local zero="1"; [[ "$1" == "0" ]] && zero="0" && shift; if [[ $# = 1 
 # Return true if $2 is set and $1 > $2
 # TODO A Verifier...
 is_sup() { [[ ! -z $2 && $1 -gt $2 ]] && return 1; return 0; }
-# 
-# # Display a message then return user's entry if it's not empty
-# # q to quit
-# get_text() {
-# 	local txt2return="" 
-# # 	default="$2";
-# 	while [[ "$txt2return" == "" ]]; do
-# 		txt2return="$( rid "$@" )"
-# # 		[[ "$txt2return" == "" ]] && [[ ! -z $default ]] && txt2return="$default"
-# 		[[ "$txt2return" == "q" ]] && return 1
-# 	done	
-# 	echo "$txt2return"
-# }
 
-# # Display error message for 1 second
-# choix2error() { msg_nn "\r" "31" "31" "$@" && sleep 1; }
-# Return true if $1 is blocs device and display error message
+# Return true if $1 is bloc device and display error message if not
 is_blockdev() { local valid=0; [[ ! -b "$1" ]] && choix2error "\"%s\" n'est pas un peripherique de blocs !" "$1" && valid=1; return $valid; }
-# Return true if $1 exists device and display error message
+# Return true if $1 exists and display error message if not
 is_existpath() { local valid=0; [[ ! -e "$1" ]] && choix2error "\"%s\" n'existe pas !" "$1" && valid=1; return $valid; }
 # 
 str2ssl() { echo "$1" | openssl enc -base64; }
+
 ## Waits until a statement succeeds or a timeout occurs
 # $1: timeout in seconds
 # $2...: condition command
@@ -76,15 +60,3 @@ run_once() {
 	fi
 	return 0
 }
-      
-# # Va etre usefull !
-# _maybe_doit() {
-#   local cond=$1; shift
-#   if eval "$cond"; then
-#     "$@"
-#   fi
-# }
-
-# exe echo "salut-\$(pwd)\" >> test"
-# FILE_COMMANDS="/tmp/exe_commands"
-# [[ ! -z $1 ]] && source_files "${@}"
