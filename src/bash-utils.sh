@@ -48,14 +48,14 @@ timeout_wait() {
 # Helper function to run make_*() only one time it's finished with result 0.
 run_once() {
 	if (( $NO_EXEC )); then
-		${1}
-		return 0
+		${@}
+		return $?
 	fi
 	if [[ ! -e ${work_dir}/done/${1} ]]; then
-		${1}
+		${@}
 		RES_RUN=$?
 		[[ ! -e ${work_dir}/done ]] && mkdir ${work_dir}/done
-		[[ ! $RES_RUN -gt 0 ]] && touch ${work_dir}/done/${1}
+		[[ $RES_RUN -eq 0 ]] && touch ${work_dir}/done/${1}
 		return $RES_RUN
 	fi
 	return 0

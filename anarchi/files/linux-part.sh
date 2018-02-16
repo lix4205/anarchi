@@ -24,7 +24,6 @@ is_entry_ok() {
 }
 
 locale_gen_chroot() {
-    msg_n "$1"
 	[[ -z "$1" ]] && die "Aucun répertoire défini !" 
 	set -e
 
@@ -103,7 +102,7 @@ desktop_environnement () {
 
 # BEGIN fstab
 # bind mounts do not have a UUID! ( genfstab... )
-set_uuid_fstab() {
+anarchi_uuid_fstab() {
 	str="/"
 	replace="\/"
 	findmnt -Recvruno SOURCE,TARGET "$1" |
@@ -284,7 +283,7 @@ if [[ $PID_COM -eq 0 ]]; then
 # On reinitialise la variable NO_EXEC
 	NO_EXEC=$TMP_NO_EXEC
 # On réecrit /etc/fstab pour monter les disques avec UUID
-	set_uuid_fstab "$RACINE"
+	run_once anarchi_uuid_fstab "$RACINE"
 	
 # 	final_message="$( set_lang_chroot "$RACINE" )\n"
 # Genere un fichier de configuration pour grub (hors nfsroot)
