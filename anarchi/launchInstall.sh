@@ -62,6 +62,7 @@ usage: ${0##*/} [options] root [packages]
     -e desktop environnement              Environnement de bureau (plasma,xfce,lxde,gnome,mate,cinnamon,fluxbox,enlightenment)
     -h hostname                           Nom de la machine
     -u username                           Login utilisateur
+    -S                                      Utiliser sudo pour l'utilisateur principal
     -n [ nm, dhcpcd@<< network_interface >> ]       Utilisation de NetworkManager ou dhcpcd (avec l'interface NETWORK_INTERFACE)
     -p                                 	Gestion imprimante ( cups )
     -H		                        Gestion imprimante HP ( cups + hplip )
@@ -155,7 +156,7 @@ notinarch_function() {
 
 # 	echo "./$NAME_SCRIPT2CALL -x $( echo $LA_LOCALE | sed "s/\..*//" ) -K $X11_KEYMAP -k $CONSOLEKEYMAP -z \"$TIMEZONE\" -a $ARCH -g $DRV_VID $( [[ "$DRV_VID" != "0" ]] && echo " -e $DE" ) -n $CONF_NET -h $NAME_MACHINE -u $USER_NAME $( [[ "$GRUB_INSTALL" != "" ]] && echo "-l $GRUB_INSTALL" ) $( [[ "$CACHE_PAQUET" != "" ]] && echo "-c $DEFAULT_CACHE_PKG" || echo "-c $ROOT_DIR_BOOTSTRAP$DEFAULT_CACHE_PKG" ) -C $ROOT_DIR_BOOTSTRAP$WORK_DIR/files/pacman.conf.$ARCH $SHOW_COMMANDE $ROOT_DIR_BOOTSTRAP $OTHER_PACKAGES" > "root.$UNAMEM/root/.bash_history"
 # 	echo 
-	COMMAND4ARCH="$WORK_DIR/$NAME_SCRIPT2CALL -x $( echo $LA_LOCALE | sed "s/\..*//" ) $QUIET$TESTING$PACSTRAP_OPTIONS $( [[ ! -z "$CACHE_PAQUET" ]] && echo "-c $DEFAULT_CACHE_PKG" || echo "-c $ROOT_DIR_BOOTSTRAP$DEFAULT_CACHE_PKG" ) $( [[ ! -z "$GRUB_INSTALL" ]] && echo "-l $GRUB_INSTALL" ) -a $ARCH -n $CONF_NET -g $DRV_VID $( [[ "$DRV_VID" != "0" ]] && echo " -e $DE" ) -D ${envir[syst_$DE]} -h $NAME_MACHINE -u $USER_NAME -z \"$TIMEZONE\" -k $CONSOLEKEYMAP -K $X11_KEYMAP -C $ROOT_DIR_BOOTSTRAP$WORK_DIR/files/pacman.conf.$ARCH  $ROOT_DIR_BOOTSTRAP $OTHER_PACKAGES"
+	COMMAND4ARCH="$WORK_DIR/$NAME_SCRIPT2CALL -x $( echo $LA_LOCALE | sed "s/\..*//" ) $QUIET$TESTING$PACSTRAP_OPTIONS $( [[ ! -z "$CACHE_PAQUET" ]] && echo "-c $DEFAULT_CACHE_PKG" || echo "-c $ROOT_DIR_BOOTSTRAP$DEFAULT_CACHE_PKG" ) $( [[ ! -z "$GRUB_INSTALL" ]] && echo "-l $GRUB_INSTALL" ) -a $ARCH -n $CONF_NET -g $DRV_VID $( [[ "$DRV_VID" != "0" ]] && echo " -e $DE" ) -D ${envir[syst_$DE]} -h $NAME_MACHINE -u $USER_NAME -z \"$TIMEZONE\" -k $CONSOLEKEYMAP -K $X11_KEYMAP $USER_SUDO -C $ROOT_DIR_BOOTSTRAP$WORK_DIR/files/pacman.conf.$ARCH  $ROOT_DIR_BOOTSTRAP $OTHER_PACKAGES"
 # 	echo $COMMAND4ARCH
 # 	COMMAND4ARCH="$WORK_DIR/$NAME_SCRIPT2CALL -x ${LAUNCH_COMMAND_ARGS[@]}  -C $ROOT_DIR_BOOTSTRAP$WORK_DIR/files/pacman.conf.$ARCH $ROOT_DIR_BOOTSTRAP $OTHER_PACKAGES" 
 # 	| sed "s/.UTF-8//" | sed "s/${CACHE_PAQUET//\//\\\/}/${DEFAULT_CACHE_PKG//\//\\\/}/"
@@ -486,7 +487,6 @@ name_host () {
 		NAME_MACHINE=$(rid "$_hostname" )
 	done
 	LAUNCH_COMMAND_ARGS+=("-h $NAME_MACHINE");
-	
 }
 
 name_user () {
@@ -695,7 +695,6 @@ perso () {
 			return 1
 		;;
 		H) 
-		# gtk3-print-backends pour lister les imprimantes dans firefox
 			write_package "$PACK_HPLIP" files/de/common.conf
 			SYSTD_TOENABLE="$SYSTD_TOENABLE $SYSTD_CUPS"
 			return 1
@@ -709,11 +708,15 @@ perso () {
 			write_package "$PACK_MAIL $([[ ! -z $PACK_OFFICE_SUITE_LANG ]] && trans_packages $(set_trans_package "$PACK_MAIL_LANG" "$LA_LOCALE") )" files/de/common.conf
 			return 1
 		;;
-		s) 
-			write_package "$PACK_TOUCHPAD" files/de/common.conf
-			return 1
-
-		;;
+        S)
+            USER_SUDO+=("-$FLAG")
+#             SHOW_COMMANDE+=(" -$flag")
+        ;;
+# 		s) 
+# 			write_package "$PACK_TOUCHPAD" files/de/common.conf
+# 			return 1
+# 
+# 		;;
 		q) 
 			QUIET="-q "
 			return 1
@@ -884,14 +887,14 @@ if ls $FILE2SOURCE*.conf >> /dev/null 2>&1; then
 			envir[syst_$DE]="$DM"
 			envir[dm_$DE]="$DM"
 			[[ ! -z "${envir[pack_$DM]}" ]] && envir[dm_$DE]="${envir[pack_$DM]}"
-			while getopts ':C:c:tdGiMpqTLsbHu:l:a:e:n:g:h:z:k:K:' flag; do
+			while getopts ':C:c:tdGiMpqTLSbHu:l:a:e:n:g:h:z:k:K:' flag; do
 				case $flag in
 					q|t) perso "$flag"
 					;;
 				esac	
 			done
 
-            LAUNCH_COMMAND_ARGS="$LA_LOCALE -a $ARCH $( [[ ! -z "$GRUB_INSTALL" ]] && echo "-l $GRUB_INSTALL" ) ${PACSTRAP_OPTIONS[@]} $( [[ ! -z "$CACHE_PAQUET" ]] && echo "-c $CACHE_PAQUET" ) $QUIET$TESTING -n $CONF_NET $( [[ "$DRV_VID" != "0" ]] && echo "-g $DRV_VID  -e $DE" ) -h $NAME_MACHINE -u $USER_NAME -z $TIMEZONE -k $CONSOLEKEYMAP -K $X11_KEYMAP"
+            LAUNCH_COMMAND_ARGS="$LA_LOCALE -a $ARCH $( [[ ! -z "$GRUB_INSTALL" ]] && echo "-l $GRUB_INSTALL" ) ${PACSTRAP_OPTIONS[@]} $( [[ ! -z "$CACHE_PAQUET" ]] && echo "-c $CACHE_PAQUET" ) $QUIET$TESTING -n $CONF_NET $( [[ "$DRV_VID" != "0" ]] && echo "-g $DRV_VID  -e $DE -D $DM" ) -h $NAME_MACHINE -u $USER_NAME -z $TIMEZONE -k $CONSOLEKEYMAP -K $X11_KEYMAP"
 			break;
 		fi
 		rf="$(rid_1 "32" "32" "$_file_load (%s)  [ ${_yes^}/$_no/e ]" "$( ls $FILE2SOURCE* )" )"
@@ -908,7 +911,7 @@ if [[ ! $FROM_FILE ]]; then
 		usage
 		exit $(( $# ? 0 : 1 ))
 	fi
-	while getopts ':C:c:tGiMpqTLsbHu:l:a:e:n:g:h:z:k:K:D:' flag; do
+	while getopts ':C:c:tGiMpqTLSbHu:l:a:e:n:g:h:z:k:K:D:' flag; do
 		case $flag in
 			C) SHOW_COMMANDE+=" -C $OPTARG"
 				LAUNCH_COMMAND_ARGS+=("-$flag $OPTARG") ;;
@@ -931,9 +934,14 @@ if [[ ! $FROM_FILE ]]; then
 			p|T|L|b|H)
 				SHOW_COMMANDE+=" -$flag"			
 			;;
-			i|G|M|s|d)
+			i|G|M|d)
 				LAUNCH_COMMAND_ARGS+=("-$flag")
 				PACSTRAP_OPTIONS+=(" -$flag")
+			;;
+			S)
+# 				LAUNCH_COMMAND_ARGS+=("-$flag")
+				SHOW_COMMANDE+=(" -$flag")
+				USER_SUDO=" -$flag"
 			;;
 # 			p|T|L|b|H|i|G|M|s|d)
 # 				SHOW_COMMANDE+=" -$flag"
@@ -1040,6 +1048,9 @@ esac
 for i in $SHOW_COMMANDE; do
 	perso "$( echo "${i}" | sed "s/-//")" 
 done
+[[ -z $USER_SUDO ]] && rid_continue "Utiliser \"sudo\" ?" && USER_SUDO=" -S"
+# LAUNCH_COMMAND_ARGS+=("-S") && SHOW_COMMANDE+=(" -$flag")
+
 
 for i in $( grep -h -v ^# files/de/trans-packages.conf ); do
 	write_package "$i" files/de/common.conf
@@ -1052,11 +1063,11 @@ fi
 if (( $REQUIRE_PACMAN )); then
 	notinarch_function 
 else
-	COMMAND2LAUNCH=("$WORK_DIR/$NAME_SCRIPT2CALL" "${LAUNCH_COMMAND_ARGS[@]}" "$RACINE" "$OTHER_PACKAGES")
+	COMMAND2LAUNCH=("$WORK_DIR/$NAME_SCRIPT2CALL" "${LAUNCH_COMMAND_ARGS[@]}" "$USER_SUDO" "$RACINE" "$OTHER_PACKAGES")
 	search_pkg $OTHER_PACKAGES
 fi
 
-LAUNCH_COMMAND=("$DIR_SCRIPTS/$NAME_SCRIPT" "${LAUNCH_COMMAND_ARGS[@]}" "${SHOW_COMMANDE[@]}" "$RACINE" "$OTHER_PACKAGES")
+LAUNCH_COMMAND=("$DIR_SCRIPTS/$NAME_SCRIPT" "${LAUNCH_COMMAND_ARGS[@]}" "$USER_SUDO" "${SHOW_COMMANDE[@]}" "$RACINE" "$OTHER_PACKAGES")
 
 echo "#!/bin/bash
 
@@ -1080,7 +1091,7 @@ TIMEZONE=$TIMEZONE
 X11_KEYMAP=$X11_KEYMAP
 
 PACSTRAP_OPTIONS=\"$PACSTRAP_OPTIONS\"
-SHOW_COMMANDE=\"$SHOW_COMMANDE\"
+SHOW_COMMANDE=\"$SHOW_COMMANDE $USER_SUDO\"
 OTHER_PACKAGES=\"$OTHER_PACKAGES\"
 " > $FILE2SOURCE$NAME_MACHINE-$LA_LOCALE.conf
 

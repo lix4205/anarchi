@@ -98,6 +98,10 @@ if [[ $DM == "slim" ]] || [[ $DM == "nodm" ]]; then
         [lxqt]="startlxqt"
         [fluxbox]="startfluxbox"
         [enlightenment]="enlightenment_start"
+        [deepin]="startdde"
+        [budgie-desktop]="budgie-desktop"
+        [i3]="i3"
+#         [node]="node"
     )
 fi
 # END

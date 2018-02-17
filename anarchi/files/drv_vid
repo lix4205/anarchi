@@ -54,7 +54,7 @@ NETM_TOOLS="network-manager-applet"
 #
 # Desktop Environnement 
 #
-ENVIRONNEMENT=("plasma" "gnome" "mate" "cinnamon" "xfce" "lxde" "lxqt" "enlightenment" "fluxbox" "deepin")
+ENVIRONNEMENT=("plasma" "gnome" "mate" "cinnamon" "xfce" "lxde" "lxqt" "enlightenment" "fluxbox" "deepin" "budgie-desktop" "i3")
 DISPLAYMANAGER=("sddm" "gdm" "lightdm" "lxdm" "slim" "nodm")
 PACK_LIGHTDM="lightdm lightdm-gtk-greeter"
 #
@@ -66,11 +66,14 @@ NET_XFCE="$NET_GNOME"
 NET_MATE="$NET_GNOME"
 NET_LXDE="$NET_GNOME"
 NET_LXQT="$WIFI_TOOLS"
+# NET_DEEPIN="$NET_GNOME"
+# NET_BUDGIE="$NET_GNOME"
 
 # 
 # Others
 #
 PACK_BLUEZ="bluez bluez-utils"
+# gtk3-print-backends pour lister les imprimantes dans firefox
 PACK_CUPS="cups gtk3-print-backends"
 PACK_HPLIP="hplip $PACK_CUPS"
 PACK_OFFICE_SUITE="libreoffice-still"
@@ -129,6 +132,19 @@ declare -A envir=(
 	[dm_enlightenment]="$PACK_LIGHTDM" 
 	[syst_enlightenment]="lightdm"
 	[netm_enlightenment]="$NET_LXQT"
+	# Deepin
+# 	[dm_deepin]="lightdm lightdm-deepin-greeter"
+	[dm_deepin]="$PACK_LIGHTDM" 
+	[syst_deepin]="lightdm"
+# 	[netm_deepin]="$NET_LXQT"
+	# Budgie-desktop
+	[dm_budgie-desktop]="$PACK_LIGHTDM" 
+	[syst_budgie-desktop]="lightdm"
+	[netm_budgie-desktop]="$NET_GNOME"
+	# i3
+	[dm_i3]="slim" 
+	[syst_i3]="slim"
+	[netm_i3]="$NET_GNOME"
 # END
 )
 

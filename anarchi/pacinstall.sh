@@ -386,45 +386,12 @@ if (( ! EXEC_DIRECT )); then
 	PATH_SOFTS="$PATH_WORK/files"
 fi
 
-# 	if ls $CONF2SOURCE*.conf >> /dev/null 2>&1; then	
-# 		rf="$(rid_1 "32" "32" "$_file_load (%s)  [ ${_yes^}/$_no/e ]" "$( ls $CONF2SOURCE* )" )"
-# 		while [[ "${rf,,}" != "$_no" ]]; do
-# 			[[ "${rf,,}" == "e" ]] && nano $CONF2SOURCE*.conf
-# 			if [[ "${rf,,}" == "$_yes" ]] || [[ -z "$rf" ]]; then
-# 				FROM_FILE=1
-# 				source $CONF2SOURCE*.conf
-# 		
-# 				[[ ! -z "$CACHE_PAQUET" ]] && hostcache=1
-# 				
-# 				for i in $PACSTRAP_OPTIONS; do
-# 					case $i in
-# 						-d) directory=1 ;;
-# 						-i) interactive=1 ;;
-# 						-G) copykeyring=0 ;;
-# 						-M) copymirrorlist=0 ;;
-# 					esac
-# 				done
-# 				while getopts ':C:c:tdxGiMsqu:l:a:e:n:g:h:z:k:K:D:' flag; do
-# 					case $flag in
-# 						t) NO_EXEC=1 ;;
-# 						q) QUIET="-q" ;;
-# 					esac	
-# 				done
-# 				break;
-# 			fi
-# 			rf="$(rid_1 "32" "32" "$_file_load (%s)  [ ${_yes^}/$_no/e ]" "$( ls $CONF2SOURCE* )" )"
-# 		done
-# 		msg_nn_end
-# 		[[ "$rf" == "$_no" ]] && rm $CONF2SOURCE*.conf
-# 	fi
-# fi
-# die "%s" "$NO_EXEC"
 if [[ -z $1 || $1 = @(-h|--help) ]]; then
     usage
     exit $(( $# ? 0 : 1 ))
 fi
 
-while getopts ':C:c:tdxGiMsqu:l:a:e:n:g:h:z:k:K:D:' flag; do
+while getopts ':C:c:tdxGiMSqu:l:a:e:n:g:h:z:k:K:D:' flag; do
     case $flag in
         C) pacman_config=$OPTARG ;;
         d) directory=1 ;;
@@ -442,7 +409,8 @@ while getopts ':C:c:tdxGiMsqu:l:a:e:n:g:h:z:k:K:D:' flag; do
         h) NAME_MACHINE="$OPTARG" ;;
         q) QUIET="-q" ;;
         # USELESS
-        s) SYNAPTICS_DRIVER="xf86-input-libinput" ;;
+        S) pass_root="sudo" ;;
+#         SYNAPTICS_DRIVER="xf86-input-libinput" 
 # 			s) SYNAPTICS_DRIVER="xf86-input-synaptics" ;;
         u) USER_NAME="$OPTARG" ;;
 # 			t) TEST=1; COLORED_PROMPT=0 ;;
@@ -552,7 +520,8 @@ else
 fi
 if (( $LANG_P )) && ! ls /tmp/done/*_passwd >> /dev/null 2>&1; then
 	msg_n "$_set_pass_msg"
-	rid_continue "Utiliser \"sudo\" ?" && pass_root="sudo" || pass_root="$( get_pass "root" "31" )"
+	[[ -z $pass_root ]] && pass_root="$( get_pass "root" "31" )"
+# 	rid_continue "Utiliser \"sudo\" ?" && pass_root="sudo" || pass_root="$( get_pass "root" "31" )"
 	pass_user="$( get_pass "$USER_NAME" "32" )"
 fi
 # BEGIN PAVE D'INFO 

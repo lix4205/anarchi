@@ -249,7 +249,7 @@ mkdir -m 0755 -p $OLDROOT$DEFAULT_CACHE_PKG
 [[ -e $FILE2SOURCE*.conf ]] && cp $FILE2SOURCE*.conf $TMPROOT/tmp/
 
 # Initialise pacman database
-run_once anarchi_pac_sy >> /dev/null
+run_once anarchi_pac_sy >> /dev/null || exit 1
 # Check if packages exist in pacman database
 #     df -a | grep $TMPROOT
 [[ ! -z "$OTHER_PACKAGES" ]] && run_once anarchi_pac_Ss
