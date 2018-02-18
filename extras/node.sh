@@ -32,10 +32,8 @@ search_wm() {
 	WM2LAUNCH="$wm_dispo"
 }
 
-# On écrit le script a appeler dans .bashrc
-SCRIPT2LAUNCH="sleep.sh"
 LAUNCH_XCOMPMGR=0
-
+# LAUNCH_COMPMARCO=0
 # Search 4 a terminal
 binterm=( "tilda" "qterminal" "yakuake" "lxterminal" "xterm" "terminology" "konsole" "mate-terminal" "gnome-terminal" )
 search_term
@@ -43,18 +41,18 @@ search_term
 binwm=("openbox" "xfwm4" "marco" "kwin_x11" )
 search_wm
 
-# On écrit le script à appeler lors du lancement
-# ! grep -q "$SCRIPT2LAUNCH" .bashrc && echo -e "\n" >> ~/.bashrc
-# ! grep -q "$SCRIPT2LAUNCH" .bashrc && echo "[[ ! -z \$NODM ]] && bash \$DIR_SCR/extras/$SCRIPT2LAUNCH" >> ~/.bashrc
-
+# [[ -z "$WM2LAUNCH" ]] && 
 # Launch windows manager
 exec $WM2LAUNCH &
 
-# Launch compositor if needed
+# Launch compositor fo qterminal and xterm
 (( $LAUNCH_XCOMPMGR )) && xcompmgr -c  >> ~/.node.log & 
+# Launch compositor for marco
+[[ "$WM2LAUNCH" == "marco" ]] && gsettings set org.mate.Marco.general compositing-manager true  >> ~/.node.log
 
 # On lance les extensions de virtualbox si besoin
-lsmod | grep -q vboxvideo && VBoxClient-all
+lsmod | grep -q vboxvideo && VBoxClient --clipboard --draganddrop --display --check3d
+# lsmod | grep -q vboxvideo && VBoxClient-all
 
 # Launch terminal
 exec /usr/bin/$TERM2LAUNCH

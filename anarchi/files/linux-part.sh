@@ -158,7 +158,7 @@ load_language() {
 
 # We have to load package list before search with pacman
 anarchi_pac_sy() {
-    loading arch_chroot "$TMPROOT" "pacman -Sy"
+    loading chroot "$TMPROOT" pacman -Sy
 }
 show_pacman_for_lang_chroot() {
 	# Forme generique "nom_paquet-locale-pays" Ex : firefox-es-mx
